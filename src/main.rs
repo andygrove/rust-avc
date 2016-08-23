@@ -20,11 +20,14 @@ use compass::Compass;
 use motors::Motors;
 use video::Video;
 
+#[derive(Debug)]
 pub enum Action {
     Initializing,
-    Navigating { waypoint: Location },
+    Navigating { waypoint: u8 },
+    WaitingForGps,
     AvoidingObstacleToLeft,
     AvoidingObstacleToRight,
+    EmergencyStop,
     Finished
 }
 
@@ -36,20 +39,28 @@ pub struct Car {
     action: Action
 }
 
+impl Car {
+
+    fn set_action(&mut self, a: Action) {
+        println!("Setting action to {:?}", a);
+        self.action = a;
+    }
+
+}
+
 fn close_enough(a: &Location, b: &Location) -> bool {
     (a.lat - b.lat).abs() < 0.000025 && (a.lon - b.lon).abs() < 0.000025
 }
 
-fn navigate_to_waypoint(car: &Car, wp: &Location) {
+fn navigate_to_waypoint(car: &mut Car, wp: &Location) {
     loop {
         match car.gps.get() {
             None => {
-                println!("Lost GPS signal");
+                car.set_action(Action::WaitingForGps);
                 car.motors.stop();
             },
             Some(loc) => {
-                println!("Current location: {:?}", loc);
-
+                car.set_action(Action::Navigating { waypoint: 0 });
                 if close_enough(&loc, &wp) {
                     println!("Reached waypoint!");
                     break;
@@ -67,7 +78,7 @@ fn navigate_to_waypoint(car: &Car, wp: &Location) {
     }
 }
 
-fn avc(car: &Car) {
+fn avc(mut car: &mut Car) {
 
     //    let video = Video::new(0);
     //    video.init();
@@ -85,7 +96,7 @@ fn avc(car: &Car) {
     // navigate to each waypoint in turn
     for (i, waypoint) in waypoints.iter().enumerate() {
         println!("Heading for waypoint {} at {:?}", i+1, waypoint);
-        navigate_to_waypoint(&car, &waypoint);
+        navigate_to_waypoint(&mut car, &waypoint);
     }
 
     car.motors.stop();
@@ -104,7 +115,7 @@ fn test_gps(car: &Car) {
 
 fn main() {
 
-    let car = Car {
+    let mut car = Car {
         gps: GPS::new("/dev/ttyUSB0"),
         compass: Compass::new("/dev/ttyUSB1"),
         motors: Motors::new("/dev/ttyUSB2"),
@@ -125,9 +136,9 @@ fn main() {
     };
 
     if matches.opt_present("g") {
-        test_gps(&car);
+        test_gps(&mut car);
     } else {
-        avc(&car);
+        avc(&mut car);
     }
 
 }
