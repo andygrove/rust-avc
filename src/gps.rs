@@ -6,33 +6,58 @@ use navigation::*;
 use std::env;
 use std::io;
 use std::time::Duration;
+use std::sync::{Arc, Mutex};
+use std::thread;
 
 use std::io::prelude::*;
 use self::serial::prelude::*;
 
 pub struct GPS {
     filename: &'static str,
-    port: Box<SerialPort>
+    location: Arc<Mutex<Location>>
 }
 
 impl GPS {
 
     pub fn new(f: &'static str) -> Self {
+        GPS {
+            filename: f,
+            location: Arc::new(Mutex::new(Location::new(0 as f64, 0 as f64)))
+        }
+    }
 
-        let mut port = serial::open(f).unwrap();
+    pub fn start_thread(&self) {
 
-        port.reconfigure(&|settings| {
-            settings.set_baud_rate(serial::Baud57600).unwrap();
-            settings.set_char_size(serial::Bits8);
-            settings.set_parity(serial::ParityNone);
-            settings.set_stop_bits(serial::Stop1);
-            settings.set_flow_control(serial::FlowNone);
-            Ok(())
-        }).unwrap();
+        let f = self.filename.clone();
+        let gps_location = self.location.clone();
 
-        port.set_timeout(Duration::from_millis(5000)).unwrap();
+        // start thread to read from serial port
+        let handle = thread::spawn(move || {
+            let mut port = serial::open(f).unwrap();
 
-        GPS { filename: f, port: Box::new(port) }
+            port.reconfigure(&|settings| {
+                settings.set_baud_rate(serial::Baud57600).unwrap();
+                settings.set_char_size(serial::Bits8);
+                settings.set_parity(serial::ParityNone);
+                settings.set_stop_bits(serial::Stop1);
+                settings.set_flow_control(serial::FlowNone);
+                Ok(())
+            }).unwrap();
+
+            port.set_timeout(Duration::from_millis(5000)).unwrap();
+
+            loop {
+                println!("Reading...");
+                let mut buf = vec![0_u8; 50];
+                let bytes_read = port.read(&mut buf[..]).unwrap();
+
+                // on receive valid co-ords ...
+                let mut loc = gps_location.lock().unwrap();
+                loc.set(12.3 as f64, 45.6 as f64);
+
+            }
+
+        });
     }
 
     pub fn get(&self) -> Option<Location> {
@@ -41,13 +66,6 @@ impl GPS {
 
         //TODO: get real location
         Some(Location::new(39.8617, -104.6731))
-    }
-
-    fn poll(&mut self) {
-        println!("Reading...");
-        let mut buf = vec![0_u8; 50];
-        let foo = self.port.read(&mut buf[..]).unwrap();
-
     }
 
 }
