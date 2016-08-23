@@ -5,3 +5,4 @@ authors = ["Andy Grove <andygrove73@gmail.com>"]
 
 [dependencies]
 navigation = "*"
+serial = "0.3.4"

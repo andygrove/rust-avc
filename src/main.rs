@@ -1,3 +1,4 @@
+
 extern crate navigation;
 
 use navigation::*;
@@ -5,22 +6,28 @@ use navigation::*;
 mod gps;
 mod compass;
 mod motors;
+mod video;
 
 use gps::GPS;
 use compass::Compass;
 use motors::Motors;
+use video::Video;
 
-struct Car {
+pub enum Action {
+    Initializing,
+    Navigating { waypoint: Location },
+    AvoidingObstacleToLeft,
+    AvoidingObstacleToRight,
+    Finished
+}
+
+pub struct Car {
     gps: GPS,
     compass: Compass,
     motors: Motors,
-    usonic: [u8; 5]
+    usonic: [u8; 5],
+    action: Action
 }
-
-//enum Action {
-//
-//}
-
 
 fn close_enough(a: &Location, b: &Location) -> bool {
     (a.lat - b.lat).abs() < 0.0001 && (a.lon - b.lon).abs() < 0.0001
@@ -52,8 +59,13 @@ fn main() {
         gps: GPS::new("/dev/ttyUSB0"),
         compass: Compass::new("/dev/ttyUSB1"),
         motors: Motors::new("/dev/ttyUSB2"),
-        usonic: [0_u8; 5]
+        usonic: [0_u8; 5],
+        action: Action::Initializing
     };
+
+//    let video = Video::new(0);
+//    video.init();
+    //TODO: Start video capture thread
 
     //TODO: wait for start button
 
