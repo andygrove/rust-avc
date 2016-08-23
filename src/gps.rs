@@ -47,7 +47,7 @@ impl GPS {
         // start thread to read from serial port
         let handle = thread::spawn(move || {
 
-            let mut buf = vec![0_u8; 128];
+            let mut buf : Vec<char> = vec![];
             let mut read_buf = vec![0_u8; 128];
 
             loop {
@@ -55,7 +55,17 @@ impl GPS {
                 let n = port.read(&mut read_buf[..]).unwrap();
 
                 println!("Read {} bytes from GPS...", n);
-                buf.extend_from_slice(&read_buf[0..n]);
+
+                for i in 0..n {
+                    let ch = read_buf[i] as char;
+                    if ch=='\n' {
+                        let sentence = String::from(&buf[..]);
+                        println!("NMEA: {}", sentence);
+                        buf.clear();
+                    } else {
+                        buf.push(ch);
+                    }
+                }
 
                 //TODO: parse NMEA sentence
 
