@@ -9,7 +9,7 @@ impl Compass {
         Compass { filename: f }
     }
 
-    pub fn get(&self) -> f32 {
+    pub fn get(&self) -> f64 {
         //TODO: get real compass bearing
         349.5
     }

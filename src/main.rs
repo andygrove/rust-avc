@@ -23,7 +23,7 @@ use video::Video;
 #[derive(Debug)]
 pub enum Action {
     Initializing,
-    Navigating { waypoint: u8 },
+    Navigating { waypoint: usize },
     WaitingForGps,
     AvoidingObstacleToLeft,
     AvoidingObstacleToRight,
@@ -52,7 +52,7 @@ fn close_enough(a: &Location, b: &Location) -> bool {
     (a.lat - b.lat).abs() < 0.000025 && (a.lon - b.lon).abs() < 0.000025
 }
 
-fn navigate_to_waypoint(car: &mut Car, wp: &Location) {
+fn navigate_to_waypoint(car: &mut Car, wp_num: usize, wp: &Location) {
     loop {
         match car.gps.get() {
             None => {
@@ -60,7 +60,7 @@ fn navigate_to_waypoint(car: &mut Car, wp: &Location) {
                 car.motors.stop();
             },
             Some(loc) => {
-                car.set_action(Action::Navigating { waypoint: 0 });
+                car.set_action(Action::Navigating { waypoint: wp_num });
                 if close_enough(&loc, &wp) {
                     println!("Reached waypoint!");
                     break;
@@ -69,10 +69,17 @@ fn navigate_to_waypoint(car: &mut Car, wp: &Location) {
                 let actual_bearing = car.compass.get();
                 let desired_bearing = loc.calc_bearing_to(&wp);
 
-                //TODO: determine what speed to set the motors to
-                car.motors.set_speed(100, 100);
+                //TODO: use correct math here
+                let turn_amount = desired_bearing - actual_bearing;
 
-            }
+                if turn_amount < 0_f64 {
+                    car.motors.set_speed(100, 200);
+                } else {
+                    car.motors.set_speed(200, 100);
+                }
+
+
+        }
         };
         thread::sleep(Duration::from_millis(100));
     }
@@ -96,9 +103,10 @@ fn avc(mut car: &mut Car) {
     // navigate to each waypoint in turn
     for (i, waypoint) in waypoints.iter().enumerate() {
         println!("Heading for waypoint {} at {:?}", i+1, waypoint);
-        navigate_to_waypoint(&mut car, &waypoint);
+        navigate_to_waypoint(&mut car, i+1, &waypoint);
     }
 
+    car.set_action(Action::Finished);
     car.motors.stop();
 
     println!("Finished");
@@ -124,7 +132,7 @@ fn main() {
     };
 
     let args: Vec<String> = env::args().collect();
-    let program = args[0].clone();
+    let _ = args[0].clone();
 
     let mut opts = Options::new();
     opts.optopt("o", "", "set video output file name", "out.mp4");
