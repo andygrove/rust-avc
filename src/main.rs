@@ -37,25 +37,33 @@ pub struct Car {
 }
 
 fn close_enough(a: &Location, b: &Location) -> bool {
-    (a.lat - b.lat).abs() < 0.0001 && (a.lon - b.lon).abs() < 0.0001
+    (a.lat - b.lat).abs() < 0.000025 && (a.lon - b.lon).abs() < 0.000025
 }
 
 fn navigate_to_waypoint(car: &Car, wp: &Location) {
     loop {
-        let loc = car.gps.get().unwrap();
-        println!("Current location: {:?}", loc);
+        match car.gps.get() {
+            None => {
+                println!("Lost GPS signal");
+                car.motors.stop();
+            },
+            Some(loc) => {
+                println!("Current location: {:?}", loc);
 
-        if close_enough(&loc, &wp) {
-            println!("Reached waypoint!");
-            break;
-        }
+                if close_enough(&loc, &wp) {
+                    println!("Reached waypoint!");
+                    break;
+                }
 
-        let actual_bearing = car.compass.get();
-        let desired_bearing = loc.calc_bearing_to(&wp);
+                let actual_bearing = car.compass.get();
+                let desired_bearing = loc.calc_bearing_to(&wp);
 
-        //TODO: determine what speed to set the motors to
-        car.motors.set_speed(100, 100);
+                //TODO: determine what speed to set the motors to
+                car.motors.set_speed(100, 100);
 
+            }
+        };
+        thread::sleep(Duration::from_millis(100));
     }
 }
 
