@@ -1,7 +1,14 @@
 
 extern crate navigation;
+extern crate getopts;
 
 use navigation::*;
+
+use getopts::Options;
+
+use std::env;
+use std::thread;
+use std::time::Duration;
 
 mod gps;
 mod compass;
@@ -52,19 +59,10 @@ fn navigate_to_waypoint(car: &Car, wp: &Location) {
     }
 }
 
+fn avc(car: &Car) {
 
-fn main() {
-
-    let car = Car {
-        gps: GPS::new("/dev/ttyUSB0"),
-        compass: Compass::new("/dev/ttyUSB1"),
-        motors: Motors::new("/dev/ttyUSB2"),
-        usonic: [0_u8; 5],
-        action: Action::Initializing
-    };
-
-//    let video = Video::new(0);
-//    video.init();
+    //    let video = Video::new(0);
+    //    video.init();
     //TODO: Start video capture thread
 
     //TODO: wait for start button
@@ -85,5 +83,43 @@ fn main() {
     car.motors.stop();
 
     println!("Finished");
+}
+
+fn test_gps(car: &Car) {
+    println!("Testing GPS");
+    car.gps.start_thread();
+    loop {
+        println!("GPS: {:?}", car.gps.get());
+        thread::sleep(Duration::from_millis(1000));
+    }
+}
+
+fn main() {
+
+    let car = Car {
+        gps: GPS::new("/dev/ttyUSB0"),
+        compass: Compass::new("/dev/ttyUSB1"),
+        motors: Motors::new("/dev/ttyUSB2"),
+        usonic: [0_u8; 5],
+        action: Action::Initializing
+    };
+
+    let args: Vec<String> = env::args().collect();
+    let program = args[0].clone();
+
+    let mut opts = Options::new();
+    opts.optopt("o", "", "set video output file name", "out.mp4");
+    opts.optflag("g", "test-gps", "tests the GPS");
+
+    let matches = match opts.parse(&args[1..]) {
+        Ok(m) => { m }
+        Err(f) => { panic!(f.to_string()) }
+    };
+
+    if matches.opt_present("g") {
+        test_gps(&car);
+    } else {
+        avc(&car);
+    }
 
 }
