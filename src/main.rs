@@ -24,6 +24,7 @@ use video::Video;
 pub enum Action {
     Initializing,
     Navigating { waypoint: usize },
+    ReachedWaypoint { waypoint: usize },
     WaitingForGps,
     AvoidingObstacleToLeft,
     AvoidingObstacleToRight,
@@ -52,7 +53,19 @@ fn close_enough(a: &Location, b: &Location) -> bool {
     (a.lat - b.lat).abs() < 0.000025 && (a.lon - b.lon).abs() < 0.000025
 }
 
+fn calc_bearing_diff(current_bearing: f64, wp_bearing: f64) -> f64 {
+    let mut ret = wp_bearing - current_bearing;
+    if ret < -180_f64 {
+        ret += 360_f64;
+    }
+    else if ret > 180_f64 {
+        ret -= 360_f64;
+    }
+    ret
+}
+
 fn navigate_to_waypoint(car: &mut Car, wp_num: usize, wp: &Location) {
+    car.set_action(Action::Navigating { waypoint: wp_num });
     loop {
         match car.gps.get() {
             None => {
@@ -60,26 +73,22 @@ fn navigate_to_waypoint(car: &mut Car, wp_num: usize, wp: &Location) {
                 car.motors.stop();
             },
             Some(loc) => {
-                car.set_action(Action::Navigating { waypoint: wp_num });
                 if close_enough(&loc, &wp) {
-                    println!("Reached waypoint!");
+                    car.set_action(Action::ReachedWaypoint { waypoint: wp_num });
                     break;
                 }
 
-                let actual_bearing = car.compass.get();
-                let desired_bearing = loc.calc_bearing_to(&wp);
+                let current_bearing = car.compass.get();
+                let wp_bearing = loc.calc_bearing_to(&wp);
 
-                //TODO: use correct math here
-                let turn_amount = desired_bearing - actual_bearing;
+                let turn_amount = calc_bearing_diff(current_bearing, wp_bearing);
 
                 if turn_amount < 0_f64 {
                     car.motors.set_speed(100, 200);
                 } else {
                     car.motors.set_speed(200, 100);
                 }
-
-
-        }
+            }
         };
         thread::sleep(Duration::from_millis(100));
     }
