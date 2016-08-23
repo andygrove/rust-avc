@@ -13,8 +13,8 @@ impl GPS {
         GPS { filename: f }
     }
 
-    pub fn get(&self) -> Location {
+    pub fn get(&self) -> Option<Location> {
         //TODO: get real location
-        Location::new(39.8617, -104.6731)
+        Some(Location::new(39.8617, -104.6731))
     }
 }
