@@ -61,11 +61,8 @@ impl GPS {
     }
 
     pub fn get(&self) -> Option<Location> {
-
-
-
-        //TODO: get real location
-        Some(Location::new(39.8617, -104.6731))
+        let loc = self.location.lock().unwrap();
+        Some(Location { lat: loc.lat, lon: loc.lon })
     }
 
 }
