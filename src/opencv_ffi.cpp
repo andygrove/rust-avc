@@ -48,7 +48,7 @@ extern "C" int32_t video_write() {
   outputVideo << frame;
 
   // this won't work for some reason when called from Rust
-  imshow( "opencv", img );
+  imshow( "opencv", frame );
 
   return 0;
 }
