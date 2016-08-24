@@ -50,11 +50,7 @@ impl GPS {
             let mut read_buf = vec![0_u8; 128];
 
             loop {
-                println!("Reading from GPS...");
                 let n = port.read(&mut read_buf[..]).unwrap();
-
-                println!("Read {} bytes from GPS...", n);
-
                 for i in 0..n {
                     let ch = read_buf[i] as char;
                     if ch=='\n' {
