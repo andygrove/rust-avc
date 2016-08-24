@@ -64,9 +64,7 @@ sudo make install
 
 ## Install Rust
 
-Follow instructions at https://rustup.rs/ to install rustup and then:
-
 ```
-rust install nightly
+curl -sSf https://static.rust-lang.org/rustup.sh | sh -s -- --channel=nightly
 ```
 
