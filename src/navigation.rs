@@ -1,5 +1,7 @@
 extern crate rand;
 
+use std::str::Split;
+
 const PI: f64 = 3.141592;
 
 
@@ -19,18 +21,29 @@ pub struct DMS {
 
 impl DMS {
 
-    /// ddmm.mmmm - degrees decimal minutes format - see https://en.wikipedia.org/wiki/Geographic_coordinate_conversion
+    /// dddmm.mmmm - degrees decimal minutes format - see https://en.wikipedia.org/wiki/Geographic_coordinate_conversion
+    ///
+    /// e.g. 3845.4240
     pub fn parse_nmea(s: &str, t: &str) -> Self {
-        let dd : i32 = (&s[0..2]).to_string().parse::<i32>().unwrap();
-        let mm : i32 = (&s[2..4]).to_string().parse::<i32>().unwrap();
-        let mmmm : i32 = (&s[5..]).to_string().parse::<i32>().unwrap();
-        let mult = match t {
-            "N" | "E" => 1,
-            "S" | "W" => -1,
-            _ => panic!("Invalid direction")
-        };
-        //TODO: pretty sure this is wrong
-        DMS { d: dd * mult, m: mm, s: ((mmmm as f32) * 60_f32) as i32 }
+        let mut parts = s.split(".");
+        let ddmm = parts.next().unwrap().parse::<i32>().unwrap();
+        let degrees = ddmm / 100;
+        let minutes = ddmm % 100;
+        //TODO: seconds
+        DMS { d: degrees, m: minutes, s: 0 }
+
+
+
+//        let dd : i32 = (&s[0..2]).to_string().parse::<i32>().unwrap();
+//        let mm : i32 = (&s[2..4]).to_string().parse::<i32>().unwrap();
+//        let mmmm : i32 = (&s[5..]).to_string().parse::<i32>().unwrap();
+//        let mult = match t {
+//            "N" | "E" => 1,
+//            "S" | "W" => -1,
+//            _ => panic!("Invalid direction")
+//        };
+//        //TODO: pretty sure this is wrong
+//        DMS { d: dd * mult, m: mm, s: ((mmmm as f32) * 60_f32) as i32 }
     }
 
     pub fn to_decimal(&self) -> f64 {
@@ -238,4 +251,11 @@ fn test_sparkfun_route_2() {
     //TODO: need to confirm that these bearings are actually correct
     assert_eq!("41.40", format!("{:.*}", 2, &route[0].calc_bearing_to(&route[1])));
 
+}
+#[test]
+fn parse_nmea_degrees_decimal_minutes() {
+    let loc = DMS::parse_nmea("10503.1234", "W");
+    assert_eq!(105, loc.d);
+    assert_eq!(3, loc.m);
+    assert_eq!(0, loc.s); //TODO: not correct
 }
