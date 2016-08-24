@@ -153,8 +153,8 @@ fn test_video() {
         let elapsed = now - start;
         video.capture();
         if elapsed > 0 {
-            video.drawText(30, 30, format!("Rendered {} frames in {} ms", i+1, elapsed));
-            video.drawText(30, 50, format!("FPS: {}", (i+1) / elapsed));
+            video.drawText(30, 30, format!("Rendered {} frames in {} seconds", i+1, elapsed));
+            video.drawText(30, 50, format!("FPS: {:.*}", 1, (i+1) / elapsed));
         } else {
             video.drawText(30, 30, format!("Frame: {}", i));
         }
