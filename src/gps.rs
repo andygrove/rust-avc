@@ -1,7 +1,6 @@
-extern crate navigation;
 extern crate serial;
 
-use navigation::*;
+use super::navigation::*;
 
 use std::env;
 use std::io;
@@ -62,23 +61,32 @@ impl GPS {
                         let sentence = String::from(&buf[..]);
                         println!("NMEA: {}", sentence);
 
-                        let parts = sentence.split(",");
+                        let parts: Vec<&str> = sentence.split(",").collect();
 
-//                        match parts[0] {
-//                            "$GPGLL" => {
-//
-//                                let lat = parts[1];     // ddmm.mmmm
-//                                let lat_ns = parts[2];  // N or S
-//                                let lon = parts[3];     // ddmm.mmmm
-//                                let lon_ew = parts[4];  // E or W
-//                                let time = parts[5];    // hhmmss.sss
-//                                let status = parts[6];  // A=valid, V=not valid
-//
-//                            },
-//                            _ => {
-//
-//                            }
-//                        }
+                        match parts[0] {
+                            "$GPGLL" => {
+
+                                let lat = parts[1];     // ddmm.mmmm
+                                let lat_ns = parts[2];  // N or S
+                                let lon = parts[3];     // ddmm.mmmm
+                                let lon_ew = parts[4];  // E or W
+                                let time = parts[5];    // hhmmss.sss
+                                let status = parts[6];  // A=valid, V=not valid
+
+                                let lat_dms = DMS::parse_nmea(lat, lat_ns);
+                                let lon_dms = DMS::parse_nmea(lon, lon_ew);
+
+                                //TODO: only update the shared state if the co-ords changed
+
+                                // on receive valid co-ords ...
+                                let mut loc = gps_location.lock().unwrap();
+                                loc.set(lon_dms.to_decimal(), lat_dms.to_decimal());
+
+                            },
+                            _ => {
+
+                            }
+                        }
 
                         buf.clear();
                     } else {
@@ -87,9 +95,6 @@ impl GPS {
                 }
 
 
-                // on receive valid co-ords ...
-                let mut loc = gps_location.lock().unwrap();
-                loc.set(12.3 as f64, 45.6 as f64);
 
             }
         });

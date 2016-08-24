@@ -1,8 +1,6 @@
 
-extern crate navigation;
 extern crate getopts;
 
-use navigation::*;
 
 use getopts::Options;
 
@@ -10,11 +8,13 @@ use std::env;
 use std::thread;
 use std::time::Duration;
 
+mod navigation;
 mod gps;
 mod compass;
 mod motors;
 mod video;
 
+use navigation::*;
 use gps::GPS;
 use compass::Compass;
 use motors::Motors;
