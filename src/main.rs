@@ -1,8 +1,11 @@
 
 extern crate getopts;
-
+extern crate chrono;
 
 use getopts::Options;
+
+use chrono::UTC;
+use chrono::DateTime;
 
 use std::env;
 use std::thread;
@@ -143,14 +146,22 @@ fn test_video() {
     let video = Video::new(0);
     video.init().unwrap();
 
+    let start = UTC::now().timestamp();
+
     for i in 0..100 {
+        let now = UTC::now().timestamp();
+        let elapsed = now - start;
         video.capture();
-        video.drawText(30, 30, format!("Frame: {}", i));
+        if elapsed > 0 {
+            video.drawText(30, 30, format!("Rendered {} frames in {} ms", i+1, elapsed));
+            video.drawText(30, 50, format!("FPS: {}", (i+1) / elapsed));
+        } else {
+            video.drawText(30, 30, format!("Frame: {}", i));
+        }
         video.write();
     }
 
     video.close();
-
 }
 
 fn main() {
