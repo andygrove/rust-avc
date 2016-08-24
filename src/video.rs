@@ -25,20 +25,24 @@ impl Video {
         Video { camera: camera }
     }
 
-    pub fn init(&self) {
-        unsafe { video_init(); };
+    pub fn init(&self) -> Result<(), i32> {
+        let status = unsafe { video_init() };
+        match status {
+            0 => Ok(()),
+            _ => Err(status)
+        }
     }
 
     // capture a frame and add instrumentation data
-    pub fn capture(&self, car: &Car) {
+    pub fn capture(&self) {
         unsafe {
             video_capture();
-            self.drawText(100, 100, "Testing .... 123 ....");
         };
     }
 
-    fn drawText(&self, x: u32, y: u32, s: &str) {
-        //unsafe { video_drawtext(x, y, s); }
+    pub fn drawText(&self, x: u32, y: u32, s: String) {
+        let cs = CString::new(s).unwrap();
+        let status = unsafe { video_drawtext(x, y, cs.as_ptr()) };
     }
 
     pub fn write(&self) {

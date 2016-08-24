@@ -130,6 +130,20 @@ fn test_gps(car: &Car) {
     }
 }
 
+fn test_video() {
+    let video = Video::new(0);
+    video.init().unwrap();
+
+    for i in 0..100 {
+        video.capture();
+        video.drawText(30, 30, format!("Frame: {}", i));
+        video.write();
+    }
+
+    video.close();
+
+}
+
 fn main() {
 
     let mut car = Car {
