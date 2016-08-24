@@ -50,6 +50,8 @@ impl GPS {
             let mut buf : Vec<char> = vec![];
             let mut read_buf = vec![0_u8; 128];
 
+            let mut nmea = Nmea::new();
+
             loop {
                 println!("Reading from GPS...");
                 let n = port.read(&mut read_buf[..]).unwrap();
@@ -59,17 +61,18 @@ impl GPS {
                 for i in 0..n {
                     let ch = read_buf[i] as char;
                     if ch=='\n' {
-                        let sentence = String::from(&buf[..]);
+                        let sentence = String::from_utf8(&buf[..]);
                         println!("NMEA: {}", sentence);
+
+                        let parts = sentence.split(",");
+                        println!("Parts: {}", parts);
+
                         buf.clear();
                     } else {
                         buf.push(ch);
                     }
                 }
 
-                //TODO: parse NMEA sentence
-
-                //TODO: only update location if GPS has changed
 
                 // on receive valid co-ords ...
                 let mut loc = gps_location.lock().unwrap();
