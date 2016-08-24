@@ -38,7 +38,6 @@ sudo apt-get install libavcodec-dev libavformat-dev libswscale-dev libv4l-dev li
 wget https://github.com/Itseez/opencv/archive/3.1.0.zip
 unzip 3.1.0.zip
 cd opencv-3.1.0/
-wget -O opencv_contrib.zip https://github.com/Itseez/opencv_contrib/archive/3.0.0.zip
 cmake -G "Unix Makefiles"
 make
 sudo make install
