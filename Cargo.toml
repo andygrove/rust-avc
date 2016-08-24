@@ -7,3 +7,4 @@ authors = ["Andy Grove <andygrove73@gmail.com>"]
 serial = "0.3.4"
 getopts = "0.2"
 rand = "0.3.13"
+libc = "0.2.0"
