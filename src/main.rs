@@ -94,7 +94,15 @@ fn navigate_to_waypoint(car: &mut Car, wp_num: usize, wp: &Location) {
     }
 }
 
-fn avc(mut car: &mut Car) {
+fn avc() {
+
+    let mut car = Car {
+        gps: GPS::new("/dev/ttyUSB0"),
+        compass: Compass::new("/dev/ttyUSB1"),
+        motors: Motors::new("/dev/ttyUSB2"),
+        usonic: [0_u8; 5],
+        action: Action::Initializing
+    };
 
     //    let video = Video::new(0);
     //    video.init();
@@ -121,11 +129,12 @@ fn avc(mut car: &mut Car) {
     println!("Finished");
 }
 
-fn test_gps(car: &Car) {
+fn test_gps() {
     println!("Testing GPS");
-    car.gps.start_thread();
+    let gps = GPS::new("/dev/ttyUSB0");
+    gps.start_thread();
     loop {
-        println!("GPS: {:?}", car.gps.get());
+        println!("GPS: {:?}", gps.get());
         thread::sleep(Duration::from_millis(1000));
     }
 }
@@ -146,30 +155,23 @@ fn test_video() {
 
 fn main() {
 
-    let mut car = Car {
-        gps: GPS::new("/dev/ttyUSB0"),
-        compass: Compass::new("/dev/ttyUSB1"),
-        motors: Motors::new("/dev/ttyUSB2"),
-        usonic: [0_u8; 5],
-        action: Action::Initializing
-    };
-
     let args: Vec<String> = env::args().collect();
     let _ = args[0].clone();
 
     let mut opts = Options::new();
     opts.optopt("o", "", "set video output file name", "out.mp4");
     opts.optflag("g", "test-gps", "tests the GPS");
+    opts.optflag("v", "test-video", "tests the video");
 
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => { m }
         Err(f) => { panic!(f.to_string()) }
     };
 
-    if matches.opt_present("g") {
-        test_gps(&mut car);
-    } else {
-        avc(&mut car);
+    if      matches.opt_present("g") { test_gps(); }
+    else if matches.opt_present("v") { test_video(); }
+    else {
+        avc();
     }
 
 }
