@@ -50,8 +50,6 @@ impl GPS {
             let mut buf : Vec<char> = vec![];
             let mut read_buf = vec![0_u8; 128];
 
-            let mut nmea = Nmea::new();
-
             loop {
                 println!("Reading from GPS...");
                 let n = port.read(&mut read_buf[..]).unwrap();
@@ -61,11 +59,26 @@ impl GPS {
                 for i in 0..n {
                     let ch = read_buf[i] as char;
                     if ch=='\n' {
-                        let sentence = String::from_utf8(&buf[..]);
+                        let sentence = String::from(&buf[..]);
                         println!("NMEA: {}", sentence);
 
                         let parts = sentence.split(",");
-                        println!("Parts: {}", parts);
+
+//                        match parts[0] {
+//                            "$GPGLL" => {
+//
+//                                let lat = parts[1];     // ddmm.mmmm
+//                                let lat_ns = parts[2];  // N or S
+//                                let lon = parts[3];     // ddmm.mmmm
+//                                let lon_ew = parts[4];  // E or W
+//                                let time = parts[5];    // hhmmss.sss
+//                                let status = parts[6];  // A=valid, V=not valid
+//
+//                            },
+//                            _ => {
+//
+//                            }
+//                        }
 
                         buf.clear();
                     } else {

@@ -7,4 +7,3 @@ authors = ["Andy Grove <andygrove73@gmail.com>"]
 navigation = "0.1.5"
 serial = "0.3.4"
 getopts = "0.2"
-nmea = 0.2"

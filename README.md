@@ -51,7 +51,7 @@ sudo apt-get install libjpeg-dev libtiff5-dev libjasper-dev libpng12-dev
 sudo apt-get install libavcodec-dev libavformat-dev libswscale-dev libv4l-dev libxvidcore-dev libx264-dev libgtk2.0-dev libatlas-base-dev gfortran python2.7-dev python3-dev
 ```
 
-Next, follow these instructions to build from source and install. This part takes a LONG time.
+Next, follow these instructions to build from source and install. This `make` step here takes a long time. I didn't time it but I would allow an hour or so for this step. 
 
 ```
 wget https://github.com/Itseez/opencv/archive/3.1.0.zip
