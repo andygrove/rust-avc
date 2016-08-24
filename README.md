@@ -2,6 +2,21 @@
 
 Source code for an autonomous vehicle based on the Raspberry Pi model 3 and the Rust programming language. This is the basis for my entry at the annual Sparkfun AVC competition in Boulder, CO and is always a work in progress.
 
+I wrote this README primarily for myself so that I can set up the softwate easily in the event that my SD card gets damaged (quite a likely outcome if the vehicle crashes).
+
+# Hardware
+
+The following electronics parts are used in my vehicle:
+
+- 1 x Raspberry Pi 3
+- 4 x USB-Serial Adapter: https://www.sparkfun.com/products/9873
+- 1 x GPS: https://www.sparkfun.com/products/8975
+- 1 x IMU: https://www.sparkfun.com/products/10736
+- 1 x Motor controller: https://www.pololu.com/product/1112
+- 4 x Brushed DC Motors: https://www.pololu.com/product/1572
+
+The total cost of the vehicle is somewhere around $500.
+
 # Configuring the Raspberry Pi
 
 ## Installing the base operating system
@@ -47,17 +62,3 @@ sudo make install
 
 Follow instructions at https://rustup.rs/
 
-# OLDER NOTES
-
-
-Optional - install raspicam lib
-
-https://sourceforge.net/projects/raspicam/files/?
-
-  111 unzip Downloads/raspicam-0.1.3.zip
-  112 cd raspicam-0.1.3/
-  113 mkdir build
-  114 cd build
-  115 cmake ..
-make
-sudo make install[ ]
