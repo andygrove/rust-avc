@@ -1,6 +1,8 @@
 extern crate serial;
 
-use super::navigation::*;
+extern crate navigation;
+
+use navigation::*;
 
 use std::env;
 use std::io;
