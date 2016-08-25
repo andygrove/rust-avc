@@ -1,11 +1,5 @@
 extern crate serial;
 
-extern crate navigation;
-
-use navigation::*;
-
-use std::env;
-use std::io;
 use std::time::Duration;
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -58,12 +52,10 @@ impl Compass {
         port.set_timeout(Duration::from_millis(5000)).unwrap();
 
         // start thread to read from serial port
-        let handle = thread::spawn(move || {
+        let _ = thread::spawn(move || {
 
             let mut buf : Vec<char> = vec![];
             let mut read_buf = vec![0_u8; 128];
-
-            let mut x = "";
 
             loop {
                 let n = port.read(&mut read_buf[..]).unwrap();

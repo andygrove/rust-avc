@@ -10,8 +10,8 @@ VideoWriter outputVideo;
 
 Mat frame;
 
-extern "C" int32_t video_init() {
-  if (!inputVideo.open(0)) {
+extern "C" int32_t video_init(uint32_t camera) {
+  if (!inputVideo.open(camera)) {
     return -1;
   }
 

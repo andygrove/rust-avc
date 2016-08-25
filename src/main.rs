@@ -6,7 +6,7 @@ extern crate navigation;
 use getopts::Options;
 
 use chrono::UTC;
-use chrono::DateTime;
+//use chrono::DateTime;
 
 use std::env;
 use std::thread;
@@ -40,7 +40,7 @@ pub struct Car {
     gps: GPS,
     compass: Compass,
     motors: Motors,
-    usonic: [u8; 5],
+//    usonic: [u8; 5],
     action: Action
 }
 
@@ -111,7 +111,7 @@ fn avc() {
         gps: GPS::new("/dev/ttyUSB0"),
         compass: Compass::new("/dev/ttyUSB1"),
         motors: Motors::new("/dev/ttyUSB2"),
-        usonic: [0_u8; 5],
+        //usonic: [0_u8; 5],
         action: Action::Initializing
     };
 

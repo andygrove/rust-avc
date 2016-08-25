@@ -1,5 +1,5 @@
 
-
+#[allow(unused_variables, dead_code)]
 pub struct Motors {
     filename: &'static str
 }
@@ -10,24 +10,7 @@ impl Motors {
         Motors { filename: f }
     }
 
-    pub fn brake_left(&self) {
-    }
-
-    pub fn brake_right(&self) {
-    }
-
-    pub fn coast_left(&self) {
-    }
-
-    pub fn coast_right(&self) {
-    }
-
-    pub fn left_speed(&self, speed: i32) {
-    }
-
-    pub fn right_speed(&self, speed: i32) {
-    }
-
+    #[allow(unused_variables)]
     pub fn set_speed(&self, l: i32, r: i32) {
     }
 
