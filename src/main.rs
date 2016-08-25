@@ -107,6 +107,13 @@ fn navigate_to_waypoint(car: &mut Car, wp_num: usize, wp: &Location) {
 
 fn avc() {
 
+    //TODO: load waypoints from file
+    let waypoints: Vec<Location> = vec![
+        Location::new(39.8617, -104.6731),
+        Location::new(39.8617, -104.6731),
+        Location::new(39.8617, -104.6731),
+    ];
+
     let mut car = Car {
         gps: GPS::new("/dev/ttyUSB0"),
         compass: Compass::new("/dev/ttyUSB1"),
@@ -115,18 +122,12 @@ fn avc() {
         action: Action::Initializing
     };
 
-    //    let video = Video::new(0);
-    //    video.init();
-    //TODO: Start video capture thread
+    let video = Video::new(0);
+    video.init().unwrap();
+
+    //TODO: start thread to do video capture
 
     //TODO: wait for start button
-
-    //TODO: load waypoints from file
-    let waypoints: Vec<Location> = vec![
-        Location::new(39.8617, -104.6731),
-        Location::new(39.8617, -104.6731),
-        Location::new(39.8617, -104.6731),
-    ];
 
     // navigate to each waypoint in turn
     for (i, waypoint) in waypoints.iter().enumerate() {
@@ -136,6 +137,8 @@ fn avc() {
 
     car.set_action(Action::Finished);
     car.motors.stop();
+
+    video.close();
 
     println!("Finished");
 }
@@ -192,6 +195,8 @@ fn main() {
     opts.optflag("g", "test-gps", "tests the GPS");
     opts.optflag("v", "test-video", "tests the video");
     opts.optflag("c", "test-compass", "tests the compass");
+    opts.optflag("m", "test-motors", "tests the motors");
+    opts.optflag("u", "test-ultrasonic", "tests the ultrasonic sensors");
 
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => { m }
@@ -201,6 +206,8 @@ fn main() {
     if      matches.opt_present("g") { test_gps(); }
     else if matches.opt_present("v") { test_video(); }
     else if matches.opt_present("c") { test_compass(); }
+    else if matches.opt_present("m") { panic!("not implemented"); }
+    else if matches.opt_present("u") { panic!("not implemented"); }
     else {
         avc();
     }
