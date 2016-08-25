@@ -73,14 +73,13 @@ impl GPS {
 
                                 println!("{} {}, {} {}", lat, lat_ns, lon, lon_ew);
 
-                                let lat_dms = DMS::parse_nmea(lat, lat_ns);
-                                let lon_dms = DMS::parse_nmea(lon, lon_ew);
+                                let x = Location::parse_nmea(lat, lat_ns, lon, lon_ew);
 
                                 //TODO: only update the shared state if the co-ords changed
 
                                 // on receive valid co-ords ...
                                 let mut loc = gps_location.lock().unwrap();
-                                loc.set(lon_dms.to_decimal(), lat_dms.to_decimal());
+                                loc.set(x.lat, x.lon);
 
                             },
                             _ => {

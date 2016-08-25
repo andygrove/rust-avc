@@ -5,11 +5,38 @@ use std::str::Split;
 const PI: f64 = 3.141592;
 
 
+/// parses an NMEA string (degrees decimal minutes) such as "3953.4210" into (39, 53.4210) and
+/// then to 39 + 53.4210/60
+fn parse_nmea_number(s: &str) -> f64 {
+    let n: f64 = String::from(s).parse().unwrap();
+    ((n/100_f64) as u32) as f64 + ((n%100_f64)/60_f64)
+}
+
+
 // represents a location in decimal degrees format
 #[derive(Debug)]
 pub struct Location {
   pub lat: f64,
   pub lon: f64
+}
+
+impl Location {
+
+    pub fn parse_nmea(lat: &str, lat_dir: &str, lon: &str, lon_dir: &str) -> Self {
+        Location {
+            lat: parse_nmea_number(lat) * match lat_dir {
+                "N" => 1_f64,
+                "S" => -1_f64,
+                _ => panic!("Invalid latitude direction")
+            },
+            lon: parse_nmea_number(lon) * match lon_dir {
+                "E" => 1_f64,
+                "W" => -1_f64,
+                _ => panic!("Invalid longitude direction")
+            }
+        }
+    }
+
 }
 
 // Degrees, Minutes, Seconds
@@ -20,18 +47,6 @@ pub struct DMS {
 }
 
 impl DMS {
-
-    /// dddmm.mmmm - degrees decimal minutes format - see https://en.wikipedia.org/wiki/Geographic_coordinate_conversion
-    ///
-    /// e.g. 3845.4240
-    pub fn parse_nmea(s: &str, t: &str) -> Self {
-        let mut parts = s.split(".");
-        let ddmm = parts.next().unwrap().parse::<i32>().unwrap();
-        let degrees = ddmm / 100;
-        let minutes = ddmm % 100 * match t { "N" | "E" => 1, _ => -1 };
-        let decimal_minutes = parts.next().unwrap().parse::<i32>().unwrap();
-        DMS { d: degrees, m: minutes, s: (60_f32 * (decimal_minutes as f32) / 10000_f32) as i32 }
-    }
 
     pub fn to_decimal(&self) -> f64 {
         let dd = (self.d as f64).abs();
