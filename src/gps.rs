@@ -1,15 +1,13 @@
 extern crate serial;
-
-extern crate navigation;
-
-use navigation::*;
-
-use std::time::Duration;
-use std::sync::{Arc, Mutex};
-use std::thread;
-
 use std::io::prelude::*;
 use self::serial::prelude::*;
+
+extern crate navigation;
+use navigation::*;
+
+use std::sync::{Arc, Mutex};
+use std::thread;
+use std::time::Duration;
 
 pub struct GPS {
     filename: &'static str,
