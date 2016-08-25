@@ -26,7 +26,16 @@ The total cost of the vehicle is somewhere around $600.
 ## Installing the base operating system
 
 Download the Raspian Jessie image from https://www.raspberrypi.org/downloads/raspbian/ (I used the 2016-05-27 version) and follow the instructions on that page to 
-burn the image onto a 16 GB (or larger) class 10 micro SD card. Insert the SD card into the Raspberry Pi and connect the power. Once the pi has booted up, open a terminal window and run the following commands:
+burn the image onto a 16 GB (or larger) class 10 micro SD card. 
+
+For me, the steps were as follows (on a Mac) but you will likely need to change the disk number. It's best to follow the instructions linked to above.
+
+```
+sudo dd bs=1m if=2016-05-27-raspbian-jessie.img of=/dev/rdisk5
+sudo diskutil eject /dev/rdisk5
+```
+
+Insert the SD card into the Raspberry Pi and connect the power. Once the pi has booted up, open a terminal window and run the following commands:
 
 ```
 sudo apt-get update

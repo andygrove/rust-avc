@@ -29,21 +29,8 @@ impl DMS {
         let ddmm = parts.next().unwrap().parse::<i32>().unwrap();
         let degrees = ddmm / 100;
         let minutes = ddmm % 100;
-        //TODO: seconds
-        DMS { d: degrees, m: minutes, s: 0 }
-
-
-
-//        let dd : i32 = (&s[0..2]).to_string().parse::<i32>().unwrap();
-//        let mm : i32 = (&s[2..4]).to_string().parse::<i32>().unwrap();
-//        let mmmm : i32 = (&s[5..]).to_string().parse::<i32>().unwrap();
-//        let mult = match t {
-//            "N" | "E" => 1,
-//            "S" | "W" => -1,
-//            _ => panic!("Invalid direction")
-//        };
-//        //TODO: pretty sure this is wrong
-//        DMS { d: dd * mult, m: mm, s: ((mmmm as f32) * 60_f32) as i32 }
+        let decimal_minutes = parts.next().unwrap().parse::<i32>().unwrap();
+        DMS { d: degrees, m: minutes, s: (60_f32 * (decimal_minutes as f32) / 10000_f32) as i32 }
     }
 
     pub fn to_decimal(&self) -> f64 {
