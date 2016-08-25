@@ -28,7 +28,7 @@ impl DMS {
         let mut parts = s.split(".");
         let ddmm = parts.next().unwrap().parse::<i32>().unwrap();
         let degrees = ddmm / 100;
-        let minutes = ddmm % 100;
+        let minutes = ddmm % 100 * match t { "N" | "E" => 1, _ => -1 };
         let decimal_minutes = parts.next().unwrap().parse::<i32>().unwrap();
         DMS { d: degrees, m: minutes, s: (60_f32 * (decimal_minutes as f32) / 10000_f32) as i32 }
     }

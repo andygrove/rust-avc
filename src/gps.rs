@@ -49,6 +49,8 @@ impl GPS {
             let mut buf : Vec<char> = vec![];
             let mut read_buf = vec![0_u8; 128];
 
+            let mut x = "";
+
             loop {
                 let n = port.read(&mut read_buf[..]).unwrap();
                 for i in 0..n {
@@ -68,6 +70,8 @@ impl GPS {
                                 let lon_ew = parts[4];  // E or W
                                 let time = parts[5];    // hhmmss.sss
                                 let status = parts[6];  // A=valid, V=not valid
+
+                                println!("{} {}, {} {}", lat, lat_ns, lon, lon_ew);
 
                                 let lat_dms = DMS::parse_nmea(lat, lat_ns);
                                 let lon_dms = DMS::parse_nmea(lon, lon_ew);
