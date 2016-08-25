@@ -57,7 +57,7 @@ impl GPS {
                     let ch = read_buf[i] as char;
                     if ch=='\n' {
                         let sentence = String::from(&buf[..]);
-                        println!("NMEA: {}", sentence);
+                        //println!("NMEA: {}", sentence);
 
                         let parts: Vec<&str> = sentence.split(",").collect();
 
