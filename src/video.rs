@@ -40,7 +40,7 @@ impl Video {
         };
     }
 
-    pub fn drawText(&self, x: u32, y: u32, s: String) {
+    pub fn draw_text(&self, x: u32, y: u32, s: String) {
         let cs = CString::new(s).unwrap();
         let status = unsafe { video_drawtext(x, y, cs.as_ptr()) };
     }

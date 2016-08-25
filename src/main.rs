@@ -29,6 +29,7 @@ pub enum Action {
     Navigating { waypoint: usize },
     ReachedWaypoint { waypoint: usize },
     WaitingForGps,
+    WaitingForCompass,
     AvoidingObstacleToLeft,
     AvoidingObstacleToRight,
     EmergencyStop,
@@ -73,7 +74,7 @@ fn navigate_to_waypoint(car: &mut Car, wp_num: usize, wp: &Location) {
         match car.gps.get() {
             None => {
                 car.set_action(Action::WaitingForGps);
-                car.motors.stop();
+                car.motors.coast();
             },
             Some(loc) => {
                 if close_enough(&loc, &wp) {
@@ -81,15 +82,22 @@ fn navigate_to_waypoint(car: &mut Car, wp_num: usize, wp: &Location) {
                     break;
                 }
 
-                let current_bearing = car.compass.get();
-                let wp_bearing = loc.calc_bearing_to(&wp);
+                match car.compass.get() {
+                    None => {
+                        car.set_action(Action::WaitingForCompass);
+                        car.motors.coast();
+                    },
+                    Some(b) => {
+                        let wp_bearing = loc.calc_bearing_to(&wp);
 
-                let turn_amount = calc_bearing_diff(current_bearing, wp_bearing);
+                        let turn_amount = calc_bearing_diff(b, wp_bearing);
 
-                if turn_amount < 0_f64 {
-                    car.motors.set_speed(100, 200);
-                } else {
-                    car.motors.set_speed(200, 100);
+                        if turn_amount < 0_f64 {
+                            car.motors.set_speed(100, 200);
+                        } else {
+                            car.motors.set_speed(200, 100);
+                        }
+                    }
                 }
             }
         };
@@ -134,10 +142,20 @@ fn avc() {
 
 fn test_gps() {
     println!("Testing GPS");
-    let gps = GPS::new("/dev/ttyUSB0");
+    let gps = GPS::new("/dev/ttyUSB0"); //TODO: Set up udev synonym
     gps.start_thread();
     loop {
         println!("GPS: {:?}", gps.get());
+        thread::sleep(Duration::from_millis(1000));
+    }
+}
+
+fn test_compass() {
+    println!("Testing Compass");
+    let compass = Compass::new("/dev/ttyUSB1"); //TODO: Set up udev synonym
+    compass.start_thread();
+    loop {
+        println!("Compass: {:?}", compass.get());
         thread::sleep(Duration::from_millis(1000));
     }
 }
@@ -153,10 +171,10 @@ fn test_video() {
         let elapsed = now - start;
         video.capture();
         if elapsed > 0 {
-            video.drawText(30, 30, format!("Rendered {} frames in {} seconds", i+1, elapsed));
-            video.drawText(30, 50, format!("FPS: {:.*}", 1, (i+1) / elapsed));
+            video.draw_text(30, 30, format!("Rendered {} frames in {} seconds", i+1, elapsed));
+            video.draw_text(30, 50, format!("FPS: {:.*}", 1, (i+1) / elapsed));
         } else {
-            video.drawText(30, 30, format!("Frame: {}", i));
+            video.draw_text(30, 30, format!("Frame: {}", i));
         }
         video.write();
     }
@@ -173,6 +191,7 @@ fn main() {
     opts.optopt("o", "", "set video output file name", "out.mp4");
     opts.optflag("g", "test-gps", "tests the GPS");
     opts.optflag("v", "test-video", "tests the video");
+    opts.optflag("c", "test-compass", "tests the compass");
 
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => { m }
@@ -181,6 +200,7 @@ fn main() {
 
     if      matches.opt_present("g") { test_gps(); }
     else if matches.opt_present("v") { test_video(); }
+    else if matches.opt_present("c") { test_compass(); }
     else {
         avc();
     }

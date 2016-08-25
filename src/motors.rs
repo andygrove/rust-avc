@@ -33,4 +33,7 @@ impl Motors {
 
     pub fn stop(&self) {
     }
+
+    pub fn coast(&self) {
+    }
 }
