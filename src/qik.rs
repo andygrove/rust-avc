@@ -183,16 +183,8 @@ impl Qik {
         self.read_byte()
     }
 
-    pub fn get_speed(&mut self, m: Motor) -> u8 {
-        self.write_byte(get_cmd_byte(match m {
-            Motor::M0 => Command::GET_MOTOR_M0_SPEED,
-            Motor::M1 => Command::GET_MOTOR_M1_SPEED
-        }));
-        self.read_byte()
-    }
-
     pub fn set_speed(&mut self, m: Motor, speed: i8) {
-        if (speed >= 0) {
+        if speed >= 0 {
             // forward
             let cmd: Vec<u8> = vec![
                 get_cmd_byte(match m {
@@ -214,7 +206,53 @@ impl Qik {
             self.write(&cmd);
         }
     }
-    
+
+    /// 2s9v1 only
+    pub fn coast(&mut self, m: Motor) {
+        let buf: Vec<u8> = vec![ get_cmd_byte(match m {
+            Motor::M0 => Command::MOTOR_M0_COAST,
+            Motor::M1 => Command::MOTOR_M1_COAST
+        })];
+        self.write(&buf);
+    }
+
+    /// 2s12v10 only
+    pub fn set_brake(&mut self, m: Motor, v: u8) {
+        assert!(v<128);
+        let cmd: Vec<u8> = vec![
+            get_cmd_byte(match m {
+                Motor::M0 => Command::MOTOR_M0_BRAKE,
+                Motor::M1 => Command::MOTOR_M1_BRAKE
+            }),
+            v
+        ];
+        self.write(&cmd);
+    }
+
+    /// 2s12v10 only
+    pub fn get_speed(&mut self, m: Motor) -> u8 {
+        self.write_byte(get_cmd_byte(match m {
+            Motor::M0 => Command::GET_MOTOR_M0_SPEED,
+            Motor::M1 => Command::GET_MOTOR_M1_SPEED
+        }));
+        self.read_byte()
+    }
+
+    /// 2s12v10 only
+    pub fn get_current(&mut self, m: Motor) -> u8 {
+        let buf: Vec<u8> = vec![ get_cmd_byte(match m {
+            Motor::M0 => Command::GET_MOTOR_M0_CURRENT,
+            Motor::M1 => Command::GET_MOTOR_M1_CURRENT
+        })];
+        self.write(&buf);
+        self.read_byte()
+    }
+
+    /// 2s12v10 only
+    pub fn get_current_milliamps(&mut self, m: Motor) -> u32 {
+        self.get_current(m) as u32 * 150
+    }
+
     /// writes a single byte to the serial port
     fn write_byte(&mut self, b: u8) {
         let buf: Vec<u8> = vec![ b ];
@@ -240,143 +278,3 @@ impl Qik {
     }
 
 }
-
-/*
-
-
-
-void PololuQik::setM0Speed(int speed)
-{
-  boolean reverse = 0;
-
-  if (speed < 0)
-  {
-    speed = -speed; // make speed a positive quantity
-    reverse = 1; // preserve the direction
-  }
-
-  if (speed > 255)
-    speed = 255;
-
-  if (speed > 127)
-  {
-    // 8-bit mode: actual speed is (speed + 128)
-    cmd[0] = reverse ? MOTOR_M0_REVERSE_8_BIT : MOTOR_M0_FORWARD_8_BIT;
-    cmd[1] = speed - 128;
-  }
-  else
-  {
-    cmd[0] = reverse ? MOTOR_M0_REVERSE : MOTOR_M0_FORWARD;
-    cmd[1] = speed;
-  }
-
-  write(cmd, 2);
-}
-
-void PololuQik::setM1Speed(int speed)
-{
-  boolean reverse = 0;
-
-  if (speed < 0)
-  {
-    speed = -speed; // make speed a positive quantity
-    reverse = 1; // preserve the direction
-  }
-
-  if (speed > 255)
-    speed = 255;
-
-  if (speed > 127)
-  {
-    // 8-bit mode: actual speed is (speed + 128)
-    cmd[0] = reverse ? MOTOR_M1_REVERSE_8_BIT : MOTOR_M1_FORWARD_8_BIT;
-    cmd[1] = speed - 128;
-  }
-  else
-  {
-    cmd[0] = reverse ? MOTOR_M1_REVERSE : MOTOR_M1_FORWARD;
-    cmd[1] = speed;
-  }
-
-  write(cmd, 2);
-}
-
-void PololuQik::setSpeeds(int m0Speed, int m1Speed)
-{
-  setM0Speed(m0Speed);
-  setM1Speed(m1Speed);
-}
-
-// 2s9v1
-
-void PololuQik2s9v1::setM0Coast()
-{
-  write(MOTOR_M0_COAST);
-}
-
-void PololuQik2s9v1::setM1Coast()
-{
-  write(MOTOR_M1_COAST);
-}
-
-void PololuQik2s9v1::setCoasts()
-{
-  setM0Coast();
-  setM1Coast();
-}
-
-// 2s12v10
-
-void PololuQik2s12v10::setM0Brake(unsigned char brake)
-{
-  if (brake > 127)
-    brake = 127;
-
-  cmd[0] = MOTOR_M0_BRAKE;
-  cmd[1] = brake;
-  write(cmd, 2);
-}
-
-void PololuQik2s12v10::setM1Brake(unsigned char brake)
-{
-  if (brake > 127)
-    brake = 127;
-
-  cmd[0] = MOTOR_M1_BRAKE;
-  cmd[1] = brake;
-  write(cmd, 2);
-}
-
-void PololuQik2s12v10::setBrakes(unsigned char m0Brake, unsigned char m1Brake)
-{
-  setM0Brake(m0Brake);
-  setM1Brake(m1Brake);
-}
-
-unsigned char PololuQik2s12v10::getM0Current()
-{
-  listen();
-  write(GET_MOTOR_M0_CURRENT);
-  while (available() < 1);
-  return read();
-}
-
-unsigned char PololuQik2s12v10::getM1Current()
-{
-  listen();
-  write(GET_MOTOR_M1_CURRENT);
-  while (available() < 1);
-  return read();
-}
-
-unsigned int PololuQik2s12v10::getM0CurrentMilliamps()
-{
-  return getM0Current() * 150;
-}
-
-unsigned int PololuQik2s12v10::getM1CurrentMilliamps()
-{
-  return getM1Current() * 150;
-}
-
-*/
