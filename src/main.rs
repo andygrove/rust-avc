@@ -172,7 +172,13 @@ fn test_motors() {
     println!("Firmware version: {}", qik.get_firmware_version());
     println!("MOTOR_M0_ACCELERATION : {}", qik.get_config(MOTOR_M0_ACCELERATION));
     println!("MOTOR_M1_ACCELERATION : {}", qik.get_config(MOTOR_M1_ACCELERATION));
-
+    for i in 0 .. 127 {
+        qik.set_speed(Motor::M0, i);
+        qik.set_speed(Motor::M1, i);
+        std::thread::sleep_ms(30);
+    }
+    qik.set_speed(Motor::M0, 0);
+    qik.set_speed(Motor::M1, 0);
 }
 
 fn test_video() {
