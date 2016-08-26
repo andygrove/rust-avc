@@ -168,6 +168,7 @@ fn test_compass() {
 fn test_motors() {
     use qik::ConfigParam::*;
     let mut qik = qik::Qik::new(String::from("/dev/ttyUSB0"), 123);
+    qik.init();
     println!("Firmware version: {}", qik.get_firmware_version());
     println!("MOTOR_M0_ACCELERATION : {}", qik.get_config(MOTOR_M0_ACCELERATION));
     println!("MOTOR_M1_ACCELERATION : {}", qik.get_config(MOTOR_M1_ACCELERATION));
