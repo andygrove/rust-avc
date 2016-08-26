@@ -16,12 +16,14 @@ mod gps;
 mod compass;
 mod motors;
 mod video;
+mod qik;
 
 use navigation::*;
 use gps::GPS;
 use compass::Compass;
 use motors::Motors;
 use video::Video;
+use qik::*;
 
 #[derive(Debug)]
 pub enum Action {
@@ -163,6 +165,11 @@ fn test_compass() {
     }
 }
 
+fn test_motors() {
+    let mut qik = qik::Qik::new(String::from("/dev/ttyUSB0"), 123);
+    println!("Firmware version: {}", qik.get_firmware_version());
+}
+
 fn test_video() {
     let video = Video::new(0);
     video.init().unwrap();
@@ -206,7 +213,7 @@ fn main() {
     if      matches.opt_present("g") { test_gps(); }
     else if matches.opt_present("v") { test_video(); }
     else if matches.opt_present("c") { test_compass(); }
-    else if matches.opt_present("m") { panic!("not implemented"); }
+    else if matches.opt_present("m") { test_motors(); }
     else if matches.opt_present("u") { panic!("not implemented"); }
     else {
         avc();
