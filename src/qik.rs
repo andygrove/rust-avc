@@ -261,7 +261,7 @@ impl Qik {
 
     /// writes a byte buffer to the serial port
     fn write(&mut self, buf: &[u8]) {
-        assert_eq!(buf.len(), self.port.write(buf).unwrap());
+        self.port.write_all(buf).unwrap();
     }
 
     /// reads a single bytes from the serial port
@@ -272,7 +272,7 @@ impl Qik {
 
     /// reads varible number of bytes from the serial port
     fn read(&mut self, n: usize) -> Vec<u8> {
-        let mut buf = Vec::with_capacity(n);
+        let mut buf = vec![0_u8; n];
         self.port.read_exact(buf.as_mut()).unwrap();
         buf
     }
