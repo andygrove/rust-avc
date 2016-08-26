@@ -191,6 +191,30 @@ impl Qik {
         self.read_byte()
     }
 
+    pub fn set_speed(&mut self, m: Motor, speed: i8) {
+        if (speed >= 0) {
+            // forward
+            let cmd: Vec<u8> = vec![
+                get_cmd_byte(match m {
+                    Motor::M0 => Command::MOTOR_M0_FORWARD_8_BIT,
+                    Motor::M1 => Command::MOTOR_M1_FORWARD_8_BIT
+                }),
+                speed as u8
+            ];
+            self.write(&cmd);
+        } else {
+            // reverse
+            let cmd: Vec<u8> = vec![
+                get_cmd_byte(match m {
+                    Motor::M0 => Command::MOTOR_M0_REVERSE_8_BIT,
+                    Motor::M1 => Command::MOTOR_M1_REVERSE_8_BIT
+                }),
+                (0-speed) as u8
+            ];
+            self.write(&cmd);
+        }
+    }
+    
     /// writes a single byte to the serial port
     fn write_byte(&mut self, b: u8) {
         let buf: Vec<u8> = vec![ b ];
