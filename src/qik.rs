@@ -18,36 +18,7 @@ pub enum Motor {
 }
 
 #[allow(non_camel_case_types)]
-enum Command {
-    GET_FIRMWARE_VERSION,
-    GET_ERROR_BYTE,
-    GET_CONFIGURATION_PARAMETER,
-    SET_CONFIGURATION_PARAMETER,
-    
-    MOTOR_M0_FORWARD,
-    MOTOR_M0_FORWARD_8_BIT,
-    MOTOR_M0_REVERSE,
-    MOTOR_M0_REVERSE_8_BIT,
-    MOTOR_M1_FORWARD,
-    MOTOR_M1_FORWARD_8_BIT,
-    MOTOR_M1_REVERSE,
-    MOTOR_M1_REVERSE_8_BIT,
-    
-    // 2s9v1 only
-    MOTOR_M0_COAST,
-    MOTOR_M1_COAST,
-
-    // 2s12v10 only
-    MOTOR_M0_BRAKE,
-    MOTOR_M1_BRAKE,
-    GET_MOTOR_M0_CURRENT,
-    GET_MOTOR_M1_CURRENT,
-    GET_MOTOR_M0_SPEED,
-    GET_MOTOR_M1_SPEED,
-}
-
-#[allow(non_camel_case_types)]
-enum ConfigParam {
+pub enum ConfigParam {
     DEVICE_ID, //0,
     PWM_PARAMETER, //1,
     SHUT_DOWN_MOTORS_ON_ERROR, //2,
@@ -60,6 +31,35 @@ enum ConfigParam {
     MOTOR_M1_CURRENT_LIMIT_DIV_2, //9,
     MOTOR_M0_CURRENT_LIMIT_RESPONSE, //10,
     MOTOR_M1_CURRENT_LIMIT_RESPONSE, //11,
+}
+
+#[allow(non_camel_case_types)]
+enum Command {
+    GET_FIRMWARE_VERSION,
+    GET_ERROR_BYTE,
+    GET_CONFIGURATION_PARAMETER,
+    SET_CONFIGURATION_PARAMETER,
+
+    MOTOR_M0_FORWARD,
+    MOTOR_M0_FORWARD_8_BIT,
+    MOTOR_M0_REVERSE,
+    MOTOR_M0_REVERSE_8_BIT,
+    MOTOR_M1_FORWARD,
+    MOTOR_M1_FORWARD_8_BIT,
+    MOTOR_M1_REVERSE,
+    MOTOR_M1_REVERSE_8_BIT,
+
+    // 2s9v1 only
+    MOTOR_M0_COAST,
+    MOTOR_M1_COAST,
+
+    // 2s12v10 only
+    MOTOR_M0_BRAKE,
+    MOTOR_M1_BRAKE,
+    GET_MOTOR_M0_CURRENT,
+    GET_MOTOR_M1_CURRENT,
+    GET_MOTOR_M0_SPEED,
+    GET_MOTOR_M1_SPEED,
 }
 
 fn get_cmd_byte(cmd: Command) -> u8 {
@@ -156,6 +156,33 @@ impl Qik {
         self.read_byte()
     }
 
+    pub fn get_config(&mut self, p: ConfigParam) -> u8 {
+        let cmd: Vec<u8> = vec![
+            get_cmd_byte(Command::GET_CONFIGURATION_PARAMETER),
+            get_config_param_byte(p)
+        ];
+        self.write(&cmd);
+        self.read_byte()
+    }
+
+    pub fn set_config(&mut self, p: ConfigParam, v: u8) -> u8 {
+        let cmd: Vec<u8> = vec![
+            get_cmd_byte(Command::SET_CONFIGURATION_PARAMETER),
+            get_config_param_byte(p),
+            v,
+            0x55,
+            0x2A
+        ];
+        self.write(&cmd);
+        self.read_byte()
+    }
+
+    pub fn get_error(&mut self) -> u8 {
+        let buf: Vec<u8> = vec![ get_cmd_byte(Command::GET_ERROR_BYTE) ];
+        self.write(&buf);
+        self.read_byte()
+    }
+
     pub fn get_speed(&mut self, m: Motor) -> u8 {
         self.write_byte(get_cmd_byte(match m {
             Motor::M0 => Command::GET_MOTOR_M0_SPEED,
@@ -184,7 +211,7 @@ impl Qik {
     /// reads varible number of bytes from the serial port
     fn read(&mut self, n: usize) -> Vec<u8> {
         let mut buf = Vec::with_capacity(n);
-        self.port.read_exact(buf.as_mut());
+        self.port.read_exact(buf.as_mut()).unwrap();
         buf
     }
 
@@ -192,36 +219,7 @@ impl Qik {
 
 /*
 
-byte PololuQik::getErrors()
-{
-  listen();
-  write(GET_ERROR_BYTE);
-  while (available() < 1);
-  return read();
-}
 
-byte PololuQik::getConfigurationParameter(byte parameter)
-{
-  listen();
-  cmd[0] = GET_CONFIGURATION_PARAMETER;
-  cmd[1] = parameter;
-  write(cmd, 2);
-  while (available() < 1);
-  return read();
-}
-
-byte PololuQik::setConfigurationParameter(byte parameter, byte value)
-{
-  listen();
-  cmd[0] = SET_CONFIGURATION_PARAMETER;
-  cmd[1] = parameter;
-  cmd[2] = value;
-  cmd[3] = 0x55;
-  cmd[4] = 0x2A;
-  write(cmd, 5);
-  while (available() < 1);
-  return read();
-}
 
 void PololuQik::setM0Speed(int speed)
 {

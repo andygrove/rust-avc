@@ -198,7 +198,7 @@ fn main() {
     let _ = args[0].clone();
 
     let mut opts = Options::new();
-    opts.optopt("o", "", "set video output file name", "out.mp4");
+    opts.optopt( "o", "out", "set video output file name", "out.mp4");
     opts.optflag("g", "test-gps", "tests the GPS");
     opts.optflag("v", "test-video", "tests the video");
     opts.optflag("c", "test-compass", "tests the compass");
