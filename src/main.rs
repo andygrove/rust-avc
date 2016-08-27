@@ -63,7 +63,7 @@ fn main() {
     };
 
     if      matches.opt_present("g") { test_gps(&conf); }
-    else if matches.opt_present("v") { test_video(); }
+    else if matches.opt_present("v") { test_video(&conf); }
     else if matches.opt_present("i") { test_imu(&conf); }
     else if matches.opt_present("m") { test_motors(&conf); }
     else if matches.opt_present("u") { panic!("not implemented"); }
@@ -110,7 +110,13 @@ fn test_motors(conf: &Config) {
     qik.set_speed(Motor::M1, 0);
 }
 
-fn test_video() {
+fn test_video(conf: &Config) {
+
+    let gps = GPS::new(conf.gps_device);
+    gps.start_thread();
+
+    let compass = Compass::new(conf.imu_device);
+    compass.start_thread();
 
     let video = Video::new(0);
 
@@ -118,16 +124,32 @@ fn test_video() {
 
     video.init(format!("video-test-{}.mp4", start)).unwrap();
 
-    for i in 0..100 {
+    let mut i = 0;
+    loop {
+        i += 1;
         let now = UTC::now().timestamp();
         let elapsed = now - start;
+
+        if elapsed > 30 {
+            break;
+        }
+
         video.capture();
         if elapsed > 0 {
-            video.draw_text(30, 30, format!("Rendered {} frames in {} seconds", i+1, elapsed));
-            video.draw_text(30, 50, format!("FPS: {:.*}", 1, (i+1) / elapsed));
-        } else {
-            video.draw_text(30, 30, format!("Frame: {}", i));
+            video.draw_text(100, 30, format!("Rendered {} frames in {} seconds", i+1, elapsed));
+            video.draw_text(100, 50, format!("FPS: {:.*}", 1, (i+1) / elapsed));
         }
+
+        video.draw_text(30, 30, match gps.get() {
+            None => format!("GPS: N/A"),
+            Some(loc) => format!("GPS: {}, {}", loc.lat, loc.lon)
+        });
+
+        video.draw_text(30, 50, match compass.get() {
+            None => format!("Compass: N/A"),
+            Some(b) => format!("Compass: {}", b)
+        });
+
         video.write();
     }
 
