@@ -10,6 +10,11 @@ use super::Config;
 use chrono::*;
 use navigation::*;
 
+use std::sync::mpsc::{Sender, Receiver};
+use std::sync::mpsc;
+use std::sync::{Arc, Mutex};
+use std::thread;
+
 /// the various actions the vehicle can be performing
 #[derive(Debug)]
 pub enum Action {
@@ -25,12 +30,13 @@ pub enum Action {
 }
 
 /// instrumentation data to display on the video stream
+#[derive(Clone,Debug)]
 pub struct State {
-    loc: Option<Location>,
+    loc: Option<(f64,f64)>,
     bearing: Option<f32>,
     next_wp: Option<u8>,
     wp_bearing: Option<f32>,
-    action: Option<Action>
+    action: Option<String>
 }
 
 impl State {
@@ -41,7 +47,7 @@ impl State {
 
     fn set_action(&mut self, a: Action) {
         println!("Action: {:?}", a);
-        self.action = Some(a);
+        self.action = Some(format!("{:?}", a));
 
     }
 
@@ -132,16 +138,15 @@ fn instrument_video(v: &Video, s: &State) {
 
 }
 
-fn foo() {
-    let video = Video::new(0);
-    let start = UTC::now().timestamp();
+struct VideoWriter {
+    state: Arc<Mutex<State>>
+}
 
-    video.init(format!("avc-{}.mp4", start)).unwrap();
+impl VideoWriter {
 
-    //TODO: start thread to do video capture
-
-
-    video.close();
+    /// logic
+    fn record(&self) {
+    }
 }
 
 pub fn avc(conf: &Config, enable_motors: bool) {
@@ -167,15 +172,44 @@ pub fn avc(conf: &Config, enable_motors: bool) {
         video: &video
     };
 
+    // set up a channel to send state info to video writer
+    //let (tx, rx): (Sender<State>, Receiver<State>) = mpsc::channel();
+
+    let state = Arc::new(Mutex::new(State::new));
+
+    // start the thread to write the video
+    let video_state = state.clone();
+    let video_thread = thread::spawn(move || {
+        let video = Video::new(0);
+        let start = UTC::now().timestamp();
+        video.init(format!("avc-{}.mp4", start)).unwrap();
+        loop {
+            video.capture();
+//            {
+//                let state = video_state.lock().unwrap();
+//                match state {
+//                    Finished => break,
+//                    _ => {}
+//                }
+//                instrument_video(&video, &state);
+//            }
+            video.write();
+
+        }
+        video.close();
+    });
+
     //TODO: wait for start button
 
     // navigate to each waypoint in turn
+    let mut state = State::new();
     for (i, waypoint) in waypoints.iter().enumerate() {
         println!("Heading for waypoint {} at {:?}", i+1, waypoint);
+//        let thread_tx = tx.clone();
+//        thread_tx.send(state.clone()).unwrap();
         navigate_to_waypoint(i+1, &waypoint, &mut io, &mut state);
     }
 
-    state.set_action(Action::Finished);
 
 //    match io.qik {
 //        None => {},
@@ -184,6 +218,9 @@ pub fn avc(conf: &Config, enable_motors: bool) {
 //            q.set_brake(Motor::M1, 127);
 //        }
 //    }
+
+    // wait for video writer to finish
+    video_thread.join().unwrap();
 
     println!("Finished");
 }
