@@ -63,7 +63,7 @@ impl Compass {
                     let ch = read_buf[i] as char;
                     if ch=='\n' {
                         let sentence = String::from(&buf[..]);
-                        let bearing: f64 = sentence::parse<f64>();
+                        let bearing: f64 = sentence.parse::<f64>().unwrap();
                         compass_bearing.lock().unwrap().set(bearing);
                         buf.clear();
                     } else {
