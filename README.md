@@ -2,14 +2,14 @@
 
 Source code for an autonomous vehicle based on the Raspberry Pi model 3 and the Rust programming language. This is the basis for my entry at the annual Sparkfun AVC competition in Boulder, CO and is always a work in progress.
 
-I wrote this README primarily for myself so that I can quickly set up the software again in the event that my SD card gets damaged (quite a likely outcome if the vehicle crashes).
+I wrote this README primarily for myself so that I can quickly set up the software again in the event that my SD card gets damaged (quite a likely outcome if the vehicle crashes!).
 
 # Electronics
 
 The following electronics parts are used in my vehicle:
 
 - 1 x Raspberry Pi 3
-- 1 x Touchscreen Display: TBD
+- 1 x Raspberry Pi 7" Display: TBD
 - 1 x Logitech C920 Webcam: https://www.amazon.com/gp/product/B006JH8T3S
 - 1 x GPS: https://www.sparkfun.com/products/8975
 - 1 x IMU: https://www.sparkfun.com/products/10736
@@ -77,3 +77,37 @@ sudo make install
 curl -sSf https://static.rust-lang.org/rustup.sh | sh -s -- --channel=nightly
 ```
 
+# Operations
+
+## Cross compiling
+
+TBD
+
+## Connecting to the pi via ethernet
+
+Use a regular ethernet cable to connect a laptop to the Pi (you'll need a USB-Ethernet adapter if you're using a laptop that doesn't have an ethernet port).
+
+```ssh pi@raspberrypi.local```
+
+The default password is 'raspberry'.
+
+
+## Setting up udev rules
+
+When connecting USB devices to the Pi they are assigned filenames such as /dev/ttyUSB0, /dev/ttyUSB1 and so on. After a reboot there is no guarantee that the names will be assigned in the same order so we need a way to assign our own names to each device e.g. /dev/ttyGPS and /dev/ttyCompass. We can use udev rules to accomplish this.
+
+Connect the first device to the Pi and use `ls -l /dev/tty*` to find the device name (you can run this before and after connecting the device and play spot the difference).
+
+Once you know the device name, in the case /dev/ttyUSB0, use `udevadm` to show the unique serial id of the device:
+
+udevadm info --attribute-walk /dev/ttyUSB0 | grep -i serial
+
+In my case, I created the file `/etc/udev/rules.d/gforce.rules` containing the following:
+
+```
+SUBSYSTEM=="tty", ATTRS{serial}=="A105BOB5", SYMLINK+="imu"
+SUBSYSTEM=="tty", ATTRS{serial}=="AL00ERTT", SYMLINK+="gps"
+SUBSYSTEM=="tty", ATTRS{serial}=="AI0483D0", SYMLINK+="qik"
+```
+
+I then used `sudo reboot` to reboot the Pi and then I was able to refer to the serial devices as `/dev/imu`, `/dev/gpu`, and `/dev/qik`.

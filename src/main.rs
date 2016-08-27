@@ -117,9 +117,9 @@ fn avc() {
     ];
 
     let mut car = Car {
-        gps: GPS::new("/dev/ttyUSB0"),
-        compass: Compass::new("/dev/ttyUSB1"),
-        motors: Motors::new("/dev/ttyUSB2"),
+        gps: GPS::new("/dev/gps"),
+        compass: Compass::new("/dev/imu"),
+        motors: Motors::new("/dev/qik"),
         //usonic: [0_u8; 5],
         action: Action::Initializing
     };
@@ -147,7 +147,7 @@ fn avc() {
 
 fn test_gps() {
     println!("Testing GPS");
-    let gps = GPS::new("/dev/ttyUSB0"); //TODO: Set up udev synonym
+    let gps = GPS::new("/dev/gps");
     gps.start_thread();
     loop {
         println!("GPS: {:?}", gps.get());
@@ -157,7 +157,7 @@ fn test_gps() {
 
 fn test_compass() {
     println!("Testing Compass");
-    let compass = Compass::new("/dev/ttyUSB1"); //TODO: Set up udev synonym
+    let compass = Compass::new("/dev/imu");
     compass.start_thread();
     loop {
         println!("Compass: {:?}", compass.get());
@@ -167,7 +167,7 @@ fn test_compass() {
 
 fn test_motors() {
     use qik::ConfigParam::*;
-    let mut qik = qik::Qik::new(String::from("/dev/ttyUSB0"), 123);
+    let mut qik = qik::Qik::new(String::from("/dev/qik"), 123);
     qik.init();
     println!("Firmware version: {}", qik.get_firmware_version());
     println!("MOTOR_M0_ACCELERATION : {}", qik.get_config(MOTOR_M0_ACCELERATION));
