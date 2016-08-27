@@ -55,9 +55,9 @@ impl State {
 
 /// group all the IO devices in a single strut to make it easier to pass them around
 struct IO<'a> {
-    gps: &'a GPS,
-    imu: &'a Compass,
-    qik: Option<&'a Qik>,
+    gps: GPS,
+    imu: Compass,
+    qik: Option<Qik>,
     video: &'a Video
 }
 
@@ -82,13 +82,13 @@ fn navigate_to_waypoint(wp_num: usize, wp: &Location, io: &mut IO, state: &mut S
         match io.gps.get() {
             None => {
                 state.set_action(Action::WaitingForGps);
-//                match io.qik {
-//                    None => {},
-//                    Some(ref mut q) => {
-//                        q.coast(Motor::M0);
-//                        q.coast(Motor::M1);
-//                    }
-//                }
+                match io.qik {
+                    None => {},
+                    Some(ref mut q) => {
+                        q.coast(Motor::M0);
+                        q.coast(Motor::M1);
+                    }
+                }
             },
             Some(loc) => {
                 if close_enough(&loc, &wp) {
@@ -99,29 +99,29 @@ fn navigate_to_waypoint(wp_num: usize, wp: &Location, io: &mut IO, state: &mut S
                 match io.imu.get() {
                     None => {
                         state.set_action(Action::WaitingForCompass);
-//                        match io.qik {
-//                            None => {},
-//                            Some(q) => {
-//                                q.coast(Motor::M0);
-//                                q.coast(Motor::M1);
-//                            }
-//                        }
+                        match io.qik {
+                            None => {},
+                            Some(ref mut q) => {
+                                q.coast(Motor::M0);
+                                q.coast(Motor::M1);
+                            }
+                        }
                     },
                     Some(b) => {
                         let wp_bearing = loc.calc_bearing_to(&wp);
                         let turn_amount = calc_bearing_diff(b, wp_bearing);
-//                        match io.qik {
-//                            None => {},
-//                            Some(q) => {
-//                                if turn_amount < 0_f64 {
-//                                    q.set_speed(Motor::M0, 100);
-//                                    q.set_speed(Motor::M1, 200);
-//                                } else {
-//                                    q.set_speed(Motor::M0, 200);
-//                                    q.set_speed(Motor::M1, 100);
-//                                }
-//                            }
-//                        }
+                        match io.qik {
+                            None => {},
+                            Some(ref mut q) => {
+                                if turn_amount < 0_f64 {
+                                    q.set_speed(Motor::M0, 100);
+                                    q.set_speed(Motor::M1, 200);
+                                } else {
+                                    q.set_speed(Motor::M0, 200);
+                                    q.set_speed(Motor::M1, 100);
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -155,20 +155,17 @@ pub fn avc(conf: &Config, enable_motors: bool) {
 
     //TODO: load waypoints from file
     let waypoints: Vec<Location> = vec![
-        Location::new(39.8617, -104.6731),
-        Location::new(39.8617, -104.6731),
-        Location::new(39.8617, -104.6731),
+        Location::new(39.94177796143009, -105.08160397410393),
+        Location::new(39.94190648894769, -105.08158653974533),
+        Location::new(39.94186741660787, -105.08174613118172),
     ];
 
-    let gps = GPS::new(conf.gps_device);
-    let imu = Compass::new(conf.imu_device);
     let video = Video::new(0);
 
     let mut io = IO {
-        gps: &gps,
-        imu: &imu,
-        //qik: if enable_motors { Some(Qik::new(String::from(conf.qik_device), 0)) } else { None },
-        qik: None,
+        gps: GPS::new(conf.gps_device),
+        imu: Compass::new(conf.imu_device),
+        qik: if enable_motors { Some(Qik::new(String::from(conf.qik_device), 0)) } else { None },
         video: &video
     };
 
