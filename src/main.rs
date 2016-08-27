@@ -209,6 +209,8 @@ fn test_video() {
 
 fn main() {
 
+    println!("G-Force!");
+
     let args: Vec<String> = env::args().collect();
     let _ = args[0].clone();
 

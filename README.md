@@ -91,6 +91,12 @@ Use a regular ethernet cable to connect a laptop to the Pi (you'll need a USB-Et
 
 The default password is 'raspberry'.
 
+For testing video, this is requred:
+
+```
+export DISPLAY=":0.0"
+```
+
 
 ## Setting up udev rules
 
