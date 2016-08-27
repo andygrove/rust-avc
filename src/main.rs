@@ -134,21 +134,28 @@ fn test_video(conf: &Config) {
             break;
         }
 
+        let mut y = 30;
+        let mut line_height = 40;
+
         video.capture();
         if elapsed > 0 {
-            video.draw_text(30, 30, format!("Rendered {} frames in {} seconds", i+1, elapsed));
-            video.draw_text(30, 50, format!("FPS: {:.*}", 1, (i+1) / elapsed));
+            video.draw_text(30, y, format!("Rendered {} frames in {} seconds", i+1, elapsed));
+            y += line_height;
+            video.draw_text(30, y, format!("FPS: {:.*}", 1, (i+1) / elapsed));
+            y += line_height;
         }
 
-        video.draw_text(30, 70, match gps.get() {
+        video.draw_text(30, y, match gps.get() {
             None => format!("GPS: N/A"),
             Some(loc) => format!("GPS: {:.*}, {:.*}", 6, loc.lat, 6, loc.lon)
         });
+        y += line_height;
 
-        video.draw_text(30, 80, match compass.get() {
+        video.draw_text(30, y, match compass.get() {
             None => format!("Compass: N/A"),
             Some(b) => format!("Compass: {:.*}", 1, b)
         });
+        y += line_height;
 
         video.write();
     }

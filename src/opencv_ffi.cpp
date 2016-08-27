@@ -39,7 +39,7 @@ extern "C" int32_t video_capture() {
 }
 
 extern "C" int32_t video_drawtext(uint32_t x, uint32_t y, const char *s) {
-  putText(frame, s, cvPoint(x,y), FONT_HERSHEY_COMPLEX_SMALL, 0.8, cvScalar(200,200,250), 1, CV_AA);
+  putText(frame, s, cvPoint(x,y), FONT_HERSHEY_COMPLEX_SMALL, 0.8, cvScalar(255,255,255,24), 1, CV_AA);
   return 0;
 }
 
