@@ -66,9 +66,9 @@ impl Compass {
                         match sentence.parse::<f64>() {
                             Ok(n) => {
                                 println!("bearing: {}", n);
-                                compass_bearing.lock().unwrap().set(bearing);
+                                compass_bearing.lock().unwrap().set(n);
                             },
-                            Err => println!("Failed to parse bearing '{}'", sentence)
+                            Err(e) => println!("Failed to parse bearing '{}'", sentence)
                         }
                         buf.clear();
                     } else {
