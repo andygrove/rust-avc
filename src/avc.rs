@@ -36,13 +36,14 @@ pub struct State {
     bearing: Option<f32>,
     next_wp: Option<u8>,
     wp_bearing: Option<f32>,
-    action: Option<String>
+    action: Option<String>,
+    finished: bool
 }
 
 impl State {
 
     fn new() -> Self {
-        State { loc: None, bearing: None, next_wp: None, wp_bearing: None, action: None }
+        State { loc: None, bearing: None, next_wp: None, wp_bearing: None, action: None, finished: false }
     }
 
     fn set_action(&mut self, a: Action) {
@@ -129,29 +130,7 @@ fn navigate_to_waypoint(wp_num: usize, wp: &Location, io: &mut IO, state: &mut S
     }
 }
 
-fn instrument_video(v: &Video, s: &State) {
-
-    match s.action {
-        Some(ref a) => v.draw_text(100, 100, format!("{:?}", a)),
-        None => {}
-    }
-
-}
-
-struct VideoWriter {
-    state: Arc<Mutex<State>>
-}
-
-impl VideoWriter {
-
-    /// logic
-    fn record(&self) {
-    }
-}
-
 pub fn avc(conf: &Config, enable_motors: bool) {
-
-    let mut state = State::new();
 
     //TODO: load waypoints from file
     let waypoints: Vec<Location> = vec![
@@ -172,7 +151,7 @@ pub fn avc(conf: &Config, enable_motors: bool) {
     // set up a channel to send state info to video writer
     //let (tx, rx): (Sender<State>, Receiver<State>) = mpsc::channel();
 
-    let state = Arc::new(Mutex::new(State::new));
+    let state = Arc::new(Mutex::new(State::new()));
 
     // start the thread to write the video
     let video_state = state.clone();
@@ -180,16 +159,70 @@ pub fn avc(conf: &Config, enable_motors: bool) {
         let video = Video::new(0);
         let start = UTC::now().timestamp();
         video.init(format!("avc-{}.mp4", start)).unwrap();
+        let mut i = 0;
         loop {
+            i += 1;
+            let now = UTC::now().timestamp();
+            let elapsed = now - start;
+
             video.capture();
-//            {
-//                let state = video_state.lock().unwrap();
-//                match state {
-//                    Finished => break,
-//                    _ => {}
-//                }
-//                instrument_video(&video, &state);
-//            }
+            {
+                let s = video_state.lock().unwrap();
+
+                if s.finished {
+                    break;
+                }
+
+
+                let mut y = 30;
+                let mut line_height = 30;
+
+                video.capture();
+
+                // Time
+                video.draw_text(30, y, format!("UTC: {}", now));
+                y += line_height;
+
+                // FPS
+                if elapsed > 0 {
+                    video.draw_text(30, y, format!("FPS: {:.*}", 1, (i+1) / elapsed));
+                    y += line_height;
+                }
+
+                // GPS
+                video.draw_text(30, y, match s.loc {
+                    None => format!("GPS: N/A"),
+                    Some((lat,lon)) => format!("GPS: {:.*}, {:.*}", 6, lat, 6, lon)
+                });
+                y += line_height;
+
+                // compass
+                video.draw_text(30, y, match s.bearing {
+                    None => format!("Compass: N/A"),
+                    Some(b) => format!("Compass: {:.*}", 1, b)
+                });
+                y += line_height;
+
+                // next waypoint number
+                video.draw_text(30, y, match s.bearing {
+                    None => format!("Next WP: N/A"),
+                    Some(wp) => format!("Next WP: {}", wp)
+                });
+                y += line_height;
+
+                // bearing for next waypoint
+                video.draw_text(30, y, match s.wp_bearing {
+                    None => format!("WP Bearing: N/A"),
+                    Some(b) => format!("WP Bearing: {}", b)
+                });
+                y += line_height;
+
+                video.draw_text(30, y, match s.action {
+                    Some(ref a) => format!("{}", a),
+                    None => format!("   ")
+                });
+
+            }
             video.write();
 
         }
