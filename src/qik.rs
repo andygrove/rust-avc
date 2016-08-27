@@ -112,14 +112,14 @@ fn get_config_param_byte(p: ConfigParam) -> u8 {
 
 
 pub struct Qik {
-    device: String,
+    device: &'static str,
 //    reset_pin: Pin,
     port: TTYPort,
 }
 
 impl Qik {
 
-    pub fn new(device: String, reset_pin: u8) -> Self {
+    pub fn new(device: &'static str, reset_pin: u8) -> Self {
 
         let mut port = serial::open(&device).unwrap();
 
