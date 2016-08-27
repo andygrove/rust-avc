@@ -5,8 +5,9 @@ extern crate navigation;
 extern crate qik;
 
 use getopts::Options;
-
 use chrono::UTC;
+use navigation::*;
+use qik::*;
 
 use std::env;
 use std::sync::mpsc::{Sender, Receiver};
@@ -16,16 +17,12 @@ use std::time::Duration;
 
 mod gps;
 mod compass;
-mod motors;
 mod video;
 mod avc;
 
-use navigation::*;
 use gps::GPS;
 use compass::Compass;
-use motors::Motors;
 use video::Video;
-use qik::*;
 use avc::*;
 
 pub struct Config {
