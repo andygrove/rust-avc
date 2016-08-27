@@ -61,7 +61,9 @@ impl Compass {
                 let n = port.read(&mut read_buf[..]).unwrap();
                 for i in 0..n {
                     let ch = read_buf[i] as char;
-                    if ch=='\n' {
+                    if ch=='.' || ch.is_numeric() {
+                        buf.push(ch);
+                    } else if ch == '\n' {
                         let sentence = String::from(&buf[..]);
                         match sentence.parse::<f64>() {
                             Ok(n) => {
@@ -71,8 +73,6 @@ impl Compass {
                             Err(e) => println!("Failed to parse bearing '{}'", sentence)
                         }
                         buf.clear();
-                    } else {
-                        buf.push(ch);
                     }
                 }
 
