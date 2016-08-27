@@ -130,24 +130,24 @@ fn test_video(conf: &Config) {
         let now = UTC::now().timestamp();
         let elapsed = now - start;
 
-        if elapsed > 30 {
+        if elapsed > 20 {
             break;
         }
 
         video.capture();
         if elapsed > 0 {
-            video.draw_text(100, 30, format!("Rendered {} frames in {} seconds", i+1, elapsed));
-            video.draw_text(100, 50, format!("FPS: {:.*}", 1, (i+1) / elapsed));
+            video.draw_text(30, 30, format!("Rendered {} frames in {} seconds", i+1, elapsed));
+            video.draw_text(30, 50, format!("FPS: {:.*}", 1, (i+1) / elapsed));
         }
 
-        video.draw_text(30, 30, match gps.get() {
+        video.draw_text(30, 70, match gps.get() {
             None => format!("GPS: N/A"),
-            Some(loc) => format!("GPS: {}, {}", loc.lat, loc.lon)
+            Some(loc) => format!("GPS: {:.*}, {:.*}", 6, loc.lat, 6, loc.lon)
         });
 
-        video.draw_text(30, 50, match compass.get() {
+        video.draw_text(30, 80, match compass.get() {
             None => format!("Compass: N/A"),
-            Some(b) => format!("Compass: {}", b)
+            Some(b) => format!("Compass: {:.*}", 1, b)
         });
 
         video.write();
