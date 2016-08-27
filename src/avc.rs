@@ -37,13 +37,17 @@ pub struct State {
     next_wp: Option<u8>,
     wp_bearing: Option<f32>,
     action: Option<String>,
+    speed: (i8,i8),
     finished: bool
 }
 
 impl State {
 
     fn new() -> Self {
-        State { loc: None, bearing: None, next_wp: None, wp_bearing: None, action: None, finished: false }
+        State { loc: None, bearing: None,
+            next_wp: None, wp_bearing: None,
+            action: None, speed: (0,0),
+            finished: false }
     }
 
     fn set_action(&mut self, a: Action) {
@@ -88,6 +92,7 @@ fn navigate_to_waypoint(wp_num: usize, wp: &Location, io: &mut IO, state: &mut S
                     Some(ref mut q) => {
                         q.coast(Motor::M0);
                         q.coast(Motor::M1);
+                        state.speed = (0,0);
                     }
                 }
             },
@@ -105,6 +110,7 @@ fn navigate_to_waypoint(wp_num: usize, wp: &Location, io: &mut IO, state: &mut S
                             Some(ref mut q) => {
                                 q.coast(Motor::M0);
                                 q.coast(Motor::M1);
+                                state.speed = (0,0);
                             }
                         }
                     },
@@ -114,13 +120,14 @@ fn navigate_to_waypoint(wp_num: usize, wp: &Location, io: &mut IO, state: &mut S
                         match io.qik {
                             None => {},
                             Some(ref mut q) => {
-                                if turn_amount < 0_f64 {
-                                    q.set_speed(Motor::M0, 100);
-                                    q.set_speed(Motor::M1, 200);
+                                //TODO: need real algorithms here
+                                state.speed = if turn_amount < 0_f64 {
+                                    (100,200)
                                 } else {
-                                    q.set_speed(Motor::M0, 200);
-                                    q.set_speed(Motor::M1, 100);
-                                }
+                                    (200,100)
+                                };
+                                q.set_speed(Motor::M0, state.speed.0);
+                                q.set_speed(Motor::M1, state.speed.1);
                             }
                         }
                     }
@@ -164,6 +171,11 @@ pub fn avc(conf: &Config, enable_motors: bool) {
             i += 1;
             let now = UTC::now().timestamp();
             let elapsed = now - start;
+
+            // TEMP DEBUGGING
+            if elapsed > 10 {
+                break;
+            }
 
             video.capture();
             {
