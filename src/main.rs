@@ -130,7 +130,7 @@ fn test_video(conf: &Config) {
         let now = UTC::now().timestamp();
         let elapsed = now - start;
 
-        if elapsed > 20 {
+        if elapsed > 10 {
             break;
         }
 

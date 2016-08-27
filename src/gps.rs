@@ -67,7 +67,7 @@ impl GPS {
                                 let _ = parts[5];    // hhmmss.sss
                                 let _ = parts[6];  // A=valid, V=not valid
 
-                                println!("{} {}, {} {}", lat, lat_ns, lon, lon_ew);
+                                //println!("{} {}, {} {}", lat, lat_ns, lon, lon_ew);
 
                                 let x = Location::parse_nmea(lat, lat_ns, lon, lon_ew);
 
