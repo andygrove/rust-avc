@@ -5,7 +5,7 @@ use std::ffi::CString;
 
 #[link(name="opencv_ffi")]
 extern {
-    fn video_init(camera: u32) -> i32;
+    fn video_init(camera: u32, filename: *const c_char) -> i32;
     fn video_capture() -> i32;
     fn video_drawtext(x: u32, y: u32, s: *const c_char) -> i32;
     fn video_write() -> i32;
@@ -22,8 +22,9 @@ impl Video {
         Video { camera: camera }
     }
 
-    pub fn init(&self) -> Result<(), i32> {
-        match unsafe { video_init(self.camera) } {
+    pub fn init(&self, filename: String) -> Result<(), i32> {
+        let f = CString::new(filename).unwrap();
+        match unsafe { video_init(self.camera, f.as_ptr()) } {
             0 => Ok(()),
             s @ _ => Err(s)
         }

@@ -10,7 +10,7 @@ VideoWriter outputVideo;
 
 Mat frame;
 
-extern "C" int32_t video_init(uint32_t camera) {
+extern "C" int32_t video_init(uint32_t camera, const char *filename) {
   if (!inputVideo.open(camera)) {
     return -1;
   }
@@ -21,8 +21,7 @@ extern "C" int32_t video_init(uint32_t camera) {
   Size S = Size((int) inputVideo.get(CV_CAP_PROP_FRAME_WIDTH),    // Acquire input size
                   (int) inputVideo.get(CV_CAP_PROP_FRAME_HEIGHT));
 
-  //outputVideo.open("out.avi", VideoWriter::fourcc('M','J','P','G'), inputVideo.get(CV_CAP_PROP_FPS), S, true);
-  outputVideo.open("out.mp4", VideoWriter::fourcc('M','P','4','V'), inputVideo.get(CV_CAP_PROP_FPS), S, true);
+  outputVideo.open(filename, VideoWriter::fourcc('M','P','4','V'), inputVideo.get(CV_CAP_PROP_FPS), S, true);
   if (!outputVideo.isOpened()) {
     cerr << "failed to open video output file" << endl;
     return -2;
@@ -48,7 +47,7 @@ extern "C" int32_t video_write() {
   outputVideo << frame;
 
   // this won't work for some reason when called from Rust
-  imshow( "opencv", frame );
+  //imshow( "opencv", frame );
 
   return 0;
 }

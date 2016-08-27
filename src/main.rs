@@ -125,7 +125,9 @@ fn avc() {
     };
 
     let video = Video::new(0);
-    video.init().unwrap();
+    let start = UTC::now().timestamp();
+
+    video.init(format!("avc-{}.mp4", start)).unwrap();
 
     //TODO: start thread to do video capture
 
@@ -182,10 +184,12 @@ fn test_motors() {
 }
 
 fn test_video() {
+
     let video = Video::new(0);
-    video.init().unwrap();
 
     let start = UTC::now().timestamp();
+
+    video.init(format!("video-test-{}.mp4", start)).unwrap();
 
     for i in 0..100 {
         let now = UTC::now().timestamp();
