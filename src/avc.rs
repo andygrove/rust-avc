@@ -51,7 +51,7 @@ impl State {
     }
 
     fn set_action(&mut self, a: Action) {
-        println!("Action: {:?}", a);
+        //println!("Action: {:?}", a);
         self.action = Some(format!("{:?}", a));
 
     }
@@ -81,9 +81,19 @@ fn calc_bearing_diff(current_bearing: f64, wp_bearing: f64) -> f64 {
     ret
 }
 
-fn navigate_to_waypoint(wp_num: usize, wp: &Location, io: &mut IO, state: &mut State) {
-    state.set_action(Action::Navigating { waypoint: wp_num });
+fn navigate_to_waypoint(wp_num: usize, wp: &Location, io: &mut IO, state: &mut State, instr: &Arc<Mutex<State>>) {
     loop {
+
+        {
+            let mut z = instr.lock().unwrap();
+
+            z.action = match state.action {
+                Some(ref a) => Some(a.clone()),
+                None => None
+            }
+        }
+
+
         match io.gps.get() {
             None => {
                 state.set_action(Action::WaitingForGps);
@@ -115,6 +125,7 @@ fn navigate_to_waypoint(wp_num: usize, wp: &Location, io: &mut IO, state: &mut S
                         }
                     },
                     Some(b) => {
+                        state.set_action(Action::Navigating { waypoint: wp_num });
                         let wp_bearing = loc.calc_bearing_to(&wp);
                         let turn_amount = calc_bearing_diff(b, wp_bearing);
                         match io.qik {
@@ -244,12 +255,13 @@ pub fn avc(conf: &Config, enable_motors: bool) {
     //TODO: wait for start button
 
     // navigate to each waypoint in turn
-    let mut state = State::new();
+    let mut state_buf = State::new();
+    let shared_state = state.clone();
     for (i, waypoint) in waypoints.iter().enumerate() {
         println!("Heading for waypoint {} at {:?}", i+1, waypoint);
 //        let thread_tx = tx.clone();
 //        thread_tx.send(state.clone()).unwrap();
-        navigate_to_waypoint(i+1, &waypoint, &mut io, &mut state);
+        navigate_to_waypoint(i+1, &waypoint, &mut io, &mut state_buf, &shared_state);
     }
 
 
