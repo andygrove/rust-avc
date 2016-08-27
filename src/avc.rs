@@ -167,7 +167,7 @@ pub fn avc(conf: &Config, enable_motors: bool) {
     let mut io = IO {
         gps: &gps,
         imu: &imu,
-//        qik: Some(Motors::new(conf.qik_device)),
+        //qik: if enable_motors { Some(Qik::new(String::from(conf.qik_device), 0)) } else { None },
         qik: None,
         video: &video
     };

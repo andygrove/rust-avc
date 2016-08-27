@@ -2,6 +2,7 @@
 extern crate getopts;
 extern crate chrono;
 extern crate navigation;
+extern crate qik;
 
 use getopts::Options;
 
@@ -17,7 +18,6 @@ mod gps;
 mod compass;
 mod motors;
 mod video;
-mod qik;
 mod avc;
 
 use navigation::*;
@@ -96,7 +96,7 @@ fn test_imu(conf: &Config) {
 fn test_motors(conf: &Config) {
     println!("Testing motors");
     use qik::ConfigParam::*;
-    let mut qik = qik::Qik::new(conf.qik_device, 123);
+    let mut qik = qik::Qik::new(String::from(conf.qik_device), 123);
     qik.init();
     println!("Firmware version: {}", qik.get_firmware_version());
     println!("MOTOR_M0_ACCELERATION : {}", qik.get_config(MOTOR_M0_ACCELERATION));
