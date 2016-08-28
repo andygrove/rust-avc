@@ -15,13 +15,13 @@ extern "C" int32_t video_init(uint32_t camera, const char *filename) {
     return -1;
   }
 
-//  int fourcc = static_cast<int>(inputVideo.get(CV_CAP_PROP_FOURCC)); 
- // cout << "fourcc = " << fourcc << endl;
-
-  Size S = Size((int) inputVideo.get(CV_CAP_PROP_FRAME_WIDTH),    // Acquire input size
+// Acquire input size (640 x 480 with the Logitech C920)
+  Size S = Size((int) inputVideo.get(CV_CAP_PROP_FRAME_WIDTH),
                   (int) inputVideo.get(CV_CAP_PROP_FRAME_HEIGHT));
 
-  outputVideo.open(filename, VideoWriter::fourcc('M','P','4','V'), inputVideo.get(CV_CAP_PROP_FPS), S, true);
+  // start writing MP4V video file and report the speed as 24 FPS which should be close enough to make
+  // playback happen in real-time based on experiments so far
+  outputVideo.open(filename, VideoWriter::fourcc('M','P','4','V'), 24, S, true);
   if (!outputVideo.isOpened()) {
     cerr << "failed to open video output file" << endl;
     return -2;

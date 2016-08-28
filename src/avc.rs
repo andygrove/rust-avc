@@ -8,6 +8,7 @@ use super::gps::*;
 use super::Config;
 
 use chrono::UTC;
+use chrono::DateTime;
 use navigation::*;
 
 use std::sync::mpsc::{Sender, Receiver};
@@ -95,9 +96,7 @@ fn navigate_to_waypoint(wp_num: usize, wp: &Location, io: &mut IO,
                         shared_state: &Arc<Mutex<Box<State>>>) {
     loop {
 
-        // send a copy of the state to the video writer thread
-//        tx.send(state.clone());
-
+        // replace the shared state ... using a block here to limit the scope of the mutex
         {
             let mut x = shared_state.lock().unwrap();
             *x = Box::new(state.clone());
@@ -163,6 +162,64 @@ fn navigate_to_waypoint(wp_num: usize, wp: &Location, io: &mut IO,
     }
 }
 
+fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, frame: i64) {
+
+    let mut y = 30;
+    let mut line_height = 25;
+
+    // FPS
+    if elapsed > 0 {
+        let fps = frame / elapsed;
+        println!("FPS: {}", fps);
+        video.draw_text(500, 25, format!("FPS: {:.*}", 1, fps));
+    }
+
+    // Time
+    video.draw_text(30, y, format!("UTC: {}", now.format("%Y-%m-%d %H:%M:%S").to_string()));
+    y += line_height;
+
+    // GPS
+    video.draw_text(30, y, match s.loc {
+        None => format!("GPS: N/A"),
+        Some((lat,lon)) => format!("GPS: {:.*}, {:.*}", 6, lat, 6, lon)
+    });
+    y += line_height;
+
+    // compass
+    video.draw_text(30, y, match s.bearing {
+        None => format!("Compass: N/A"),
+        Some(b) => format!("Compass: {:.*} °", 1, b)
+    });
+    y += line_height;
+
+    // next waypoint number
+    video.draw_text(30, y, match s.next_wp {
+        None => format!("Next WP: N/A"),
+        Some(wp) => format!("Next WP: {}", wp)
+    });
+    y += line_height;
+
+    // bearing for next waypoint
+    video.draw_text(30, y, match s.wp_bearing {
+        None => format!("WP Bearing: N/A"),
+        Some(b) => format!("WP Bearing: {:.*} °", 1, b)
+    });
+    y += line_height;
+
+    // bearing for next waypoint
+    video.draw_text(30, y, match s.turn {
+        None => format!("Turn: N/A"),
+        Some(b) => format!("Turn: {:.*}", 1, b)
+    });
+    y += line_height;
+
+    // action
+    video.draw_text(30, y, match s.action {
+        Some(ref a) => format!("{:?}", a),
+        None => format!("")
+    });
+
+}
 pub fn avc(conf: &Config, enable_motors: bool) {
 
     //TODO: load waypoints from file
@@ -184,6 +241,9 @@ pub fn avc(conf: &Config, enable_motors: bool) {
     io.gps.start_thread();
     io.imu.start_thread();
 
+    // sharing state with a Mutex rather than using channels due to the producer and consumer
+    // operating at such different rates and the producer only needing the latest state 24
+    // times per second
     let shared_state = Arc::new(Mutex::new(Box::new(State::new())));
 
     // start the thread to write the video
@@ -192,86 +252,26 @@ pub fn avc(conf: &Config, enable_motors: bool) {
         let video = Video::new(0);
         let start = UTC::now().timestamp();
         video.init(format!("avc-{}.mp4", start)).unwrap();
-        let mut i = 0;
+        let mut frame = 0;
         loop {
-            i += 1;
+            frame += 1;
             let now = UTC::now();
             let elapsed = now.timestamp() - start;
 
-            // TEMP DEBUGGING
-            if elapsed > 10 {
-                break;
-            }
-
             video.capture();
+
             {
                 let s = video_state.lock().unwrap();
-
                 println!("Frame {}: GPS={:?}, Compass={:?}, Next WP={:?}, WP_Bearing={:?}, Turn={:?}",
-                         i, s.loc, s.bearing, s.next_wp, s.wp_bearing, s.turn );
+                         frame, s.loc, s.bearing, s.next_wp, s.wp_bearing, s.turn );
 
                 if s.finished {
                     break;
                 }
-
-                let mut y = 30;
-                let mut line_height = 25;
-
-                // Time
-                video.draw_text(30, y, format!("UTC: {}", now.format("%Y-%m-%d %H:%M:%S").to_string()));
-                y += line_height;
-
-                // FPS
-                if elapsed > 0 {
-                    video.draw_text(30, y, format!("FPS: {:.*}", 1, (i+1) / elapsed));
-                    y += line_height;
-                }
-
-                // GPS
-                video.draw_text(30, y, match s.loc {
-                    None => format!("GPS: N/A"),
-                    Some((lat,lon)) => format!("GPS: {:.*}, {:.*}", 6, lat, 6, lon)
-                });
-                y += line_height;
-
-                // compass
-                video.draw_text(30, y, match s.bearing {
-                    None => format!("Compass: N/A"),
-                    Some(b) => format!("Compass: {:.*} °", 1, b)
-                });
-                y += line_height;
-
-                // next waypoint number
-                video.draw_text(30, y, match s.next_wp {
-                    None => format!("Next WP: N/A"),
-                    Some(wp) => format!("Next WP: {}", wp)
-                });
-                y += line_height;
-
-                // bearing for next waypoint
-                video.draw_text(30, y, match s.wp_bearing {
-                    None => format!("WP Bearing: N/A"),
-                    Some(b) => format!("WP Bearing: {:.*} °", 1, b)
-                });
-                y += line_height;
-
-                // bearing for next waypoint
-                video.draw_text(30, y, match s.turn {
-                    None => format!("Turn: N/A"),
-                    Some(b) => format!("Turn: {:.*}", 1, b)
-                });
-                y += line_height;
-
-                // action
-                video.draw_text(30, y, match s.action {
-                    Some(ref a) => format!("{:?}", a),
-                    None => format!("")
-                });
-
+                augment_video(&video, &s, now, elapsed, frame);
             }
-            video.write();
-            thread::sleep(Duration::from_millis(30));
 
+            video.write();
         }
         video.close();
     });
