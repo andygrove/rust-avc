@@ -172,6 +172,9 @@ pub fn avc(conf: &Config, enable_motors: bool) {
         video: &video
     };
 
+    io.gps.start_thread();
+    io.imu.start_thread();
+
     let shared_state = Arc::new(Mutex::new(Box::new(State::new())));
 
     // start the thread to write the video
