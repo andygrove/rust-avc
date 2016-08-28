@@ -147,9 +147,9 @@ fn navigate_to_waypoint(wp_num: usize, wp: &Location, io: &mut IO,
                             Some(ref mut q) => {
                                 //TODO: need real algorithms here
                                 state.speed = if state.turn.unwrap() < 0_f64 {
-                                    (100,200)
+                                    (50,100)
                                 } else {
-                                    (200,100)
+                                    (100,50)
                                 };
                                 q.set_speed(Motor::M0, state.speed.0);
                                 q.set_speed(Motor::M1, state.speed.1);
@@ -169,7 +169,7 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
 
     // FPS
     if elapsed > 0 {
-        let fps = frame / elapsed;
+        let fps : f32 = (frame as f32) / (elapsed as f32);
         println!("FPS: {}", fps);
         video.draw_text(500, 25, format!("FPS: {:.*}", 1, fps));
     }
@@ -211,6 +211,10 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
         None => format!("Turn: N/A"),
         Some(b) => format!("Turn: {:.*}", 1, b)
     });
+    y += line_height;
+
+    // motor speeds
+    video.draw_text(30, y, format!("Motors: {} / {}", s.speed.0, s.speed.1));
     y += line_height;
 
     // action
