@@ -17,20 +17,12 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
-struct Settings {
-    max_speed: i8,
-    differential_drive_coefficient: f32
-
-}
-
-impl Settings {
-
-    fn new() -> Self {
-        Settings {
-            max_speed: 127,
-            differential_drive_coefficient: 5_f32
-        }
-    }
+//NOTE: public fields are bad practice ... will fix later
+pub struct Settings {
+    pub max_speed: i8,
+    pub differential_drive_coefficient: f32,
+    pub enable_motors: bool,
+    pub waypoints: Vec<Location>
 }
 
 /// the various actions the vehicle can be performing
@@ -93,28 +85,193 @@ struct IO<'a> {
     video: &'a Video
 }
 
-struct AVC {
-    settings: Settings,
+pub struct AVC<'a> {
+    conf: &'a Config,
+    settings: &'a Settings,
     shared_state: Arc<Mutex<Box<State>>>
 }
 
-impl AVC {
+impl<'a> AVC<'a> {
 
-    fn new() -> Self {
+    pub fn new(conf: &'a Config, settings: &'a Settings) -> Self {
         AVC {
-            settings: Settings::new(),
+            conf: conf,
+            settings: settings,
             shared_state: Arc::new(Mutex::new(Box::new(State::new())))
         }
     }
 
-    fn start() {
+    pub fn start(&self) {
 
     }
 
-    fn stop() {
+    pub fn stop(&self) {
 
     }
 
+    pub fn run(&self) {
+
+        let video = Video::new(0);
+
+        let mut io = IO {
+            gps: GPS::new(self.conf.gps_device),
+            imu: Compass::new(self.conf.imu_device),
+            qik: if self.settings.enable_motors {
+                Some(Qik::new(String::from(self.conf.qik_device), 0))
+            } else {
+                None
+            },
+            video: &video
+        };
+
+        io.gps.start_thread();
+        io.imu.start_thread();
+
+        // sharing state with a Mutex rather than using channels due to the producer and consumer
+        // operating at such different rates and the producer only needing the latest state 24
+        // times per second
+        //    let shared_state = Arc::new(Mutex::new(Box::new(State::new())));
+
+        // start the thread to write the video
+        let video_state = self.shared_state.clone();
+        let video_thread = thread::spawn(move || {
+            let video = Video::new(0);
+            let start = UTC::now().timestamp();
+            let filename = format!("avc-{}.mp4", start);
+            println!("Writing video to {}", filename);
+            video.init(filename).unwrap();
+            let mut frame = 0;
+            loop {
+                frame += 1;
+
+                //TODO: remove this temp hacking once we have start/start interface
+                if frame == 240 {
+                    break;
+                }
+
+                let now = UTC::now();
+                let elapsed = now.timestamp() - start;
+
+                video.capture();
+
+                {
+                    let s = video_state.lock().unwrap();
+                    println!("{:?}", *s);
+
+                    if s.finished {
+                        break;
+                    }
+                    augment_video(&video, &s, now, elapsed, frame);
+                }
+
+                video.write();
+            }
+
+            println!("Closing video file");
+            video.close();
+        });
+
+        //TODO: wait for start button
+
+        let mut state = State::new();
+        let nav_state = self.shared_state.clone();
+        for (i, waypoint) in self.settings.waypoints.iter().enumerate() {
+            println!("Heading for waypoint {} at {:?}", i+1, waypoint);
+            self.navigate_to_waypoint(i+1, &waypoint, &mut io, &mut state, &nav_state);
+        }
+
+        match io.qik {
+            None => {},
+            Some(ref mut q) => {
+                q.set_brake(Motor::M0, 127);
+                q.set_brake(Motor::M1, 127);
+            }
+        }
+
+        // wait for video writer to finish
+        video_thread.join().unwrap();
+
+        println!("Finished");
+    }
+
+    fn navigate_to_waypoint(&self, wp_num: usize, wp: &Location, io: &mut IO,
+                            state: &mut State,
+                            nav_state: &Arc<Mutex<Box<State>>>
+    ) {
+        loop {
+
+            // replace the shared state ... using a block here to limit the scope of the mutex
+            {
+                let mut x = nav_state.lock().unwrap();
+                *x = Box::new(state.clone());
+            }
+
+            match io.gps.get() {
+                None => {
+                    state.loc = None;
+                    state.set_action(Action::WaitingForGps);
+                    match io.qik {
+                        None => {},
+                        Some(ref mut q) => {
+                            q.coast(Motor::M0);
+                            q.coast(Motor::M1);
+                            state.speed = (0,0);
+                        }
+                    }
+                },
+                Some(loc) => {
+                    state.loc = Some((loc.lat, loc.lon));
+                    if close_enough(&loc, &wp) {
+                        state.set_action(Action::ReachedWaypoint { waypoint: wp_num });
+                        break;
+                    }
+
+                    match io.imu.get() {
+                        None => {
+                            state.bearing = None;
+                            state.set_action(Action::WaitingForCompass);
+                            match io.qik {
+                                None => {},
+                                Some(ref mut q) => {
+                                    q.coast(Motor::M0);
+                                    q.coast(Motor::M1);
+                                    state.speed = (0,0);
+                                }
+                            }
+                        },
+                        Some(b) => {
+                            state.set_action(Action::Navigating { waypoint: wp_num });
+                            let wp_bearing = loc.calc_bearing_to(&wp) as f32;
+                            let turn = calc_bearing_diff(b, wp_bearing);
+                            let mut left_speed = self.settings.max_speed;
+                            let mut right_speed = self.settings.max_speed;
+
+                            if turn < 0_f32 {
+                                // turn left by reducing speed of left motor
+                                left_speed = calculate_motor_speed(&self.settings, turn.abs());
+                            } else {
+                                // turn right by reducing speed of right motor
+                                right_speed = calculate_motor_speed(&self.settings, turn.abs());
+                            };
+
+                            state.bearing = Some(b);
+                            state.waypoint = Some((wp_num, wp_bearing));
+                            state.turn = Some(turn);
+                            state.speed = (left_speed, right_speed);
+
+                            match io.qik {
+                                None => {},
+                                Some(ref mut q) => {
+                                    q.set_speed(Motor::M0, state.speed.0);
+                                    q.set_speed(Motor::M1, state.speed.1);
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+        }
+    }
 }
 
 
@@ -149,84 +306,6 @@ fn calculate_motor_speed(settings: &Settings, angle: f32) -> i8 {
     (coefficient * (settings.max_speed as f32)) as i8
 }
 
-fn navigate_to_waypoint(wp_num: usize, wp: &Location, io: &mut IO,
-                        state: &mut State,
-                        shared_state: &Arc<Mutex<Box<State>>>,
-                        settings: &Settings) {
-    loop {
-
-        // replace the shared state ... using a block here to limit the scope of the mutex
-        {
-            let mut x = shared_state.lock().unwrap();
-            *x = Box::new(state.clone());
-        }
-
-        match io.gps.get() {
-            None => {
-                state.loc = None;
-                state.set_action(Action::WaitingForGps);
-                match io.qik {
-                    None => {},
-                    Some(ref mut q) => {
-                        q.coast(Motor::M0);
-                        q.coast(Motor::M1);
-                        state.speed = (0,0);
-                    }
-                }
-            },
-            Some(loc) => {
-                state.loc = Some((loc.lat, loc.lon));
-                if close_enough(&loc, &wp) {
-                    state.set_action(Action::ReachedWaypoint { waypoint: wp_num });
-                    break;
-                }
-
-                match io.imu.get() {
-                    None => {
-                        state.bearing = None;
-                        state.set_action(Action::WaitingForCompass);
-                        match io.qik {
-                            None => {},
-                            Some(ref mut q) => {
-                                q.coast(Motor::M0);
-                                q.coast(Motor::M1);
-                                state.speed = (0,0);
-                            }
-                        }
-                    },
-                    Some(b) => {
-                        state.set_action(Action::Navigating { waypoint: wp_num });
-                        let wp_bearing = loc.calc_bearing_to(&wp) as f32;
-                        let turn = calc_bearing_diff(b, wp_bearing);
-                        let mut left_speed = settings.max_speed;
-                        let mut right_speed = settings.max_speed;
-
-                        if turn < 0_f32 {
-                            // turn left by reducing speed of left motor
-                            left_speed = calculate_motor_speed(&settings, turn.abs());
-                        } else {
-                            // turn right by reducing speed of right motor
-                            right_speed = calculate_motor_speed(&settings, turn.abs());
-                        };
-
-                        state.bearing = Some(b);
-                        state.waypoint = Some((wp_num, wp_bearing));
-                        state.turn = Some(turn);
-                        state.speed = (left_speed, right_speed);
-
-                        match io.qik {
-                            None => {},
-                            Some(ref mut q) => {
-                                q.set_speed(Motor::M0, state.speed.0);
-                                q.set_speed(Motor::M1, state.speed.1);
-                            }
-                        }
-                    }
-                }
-            }
-        };
-    }
-}
 
 fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, frame: i64) {
 
@@ -284,94 +363,5 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
 
 }
 
-pub fn avc(conf: &Config, enable_motors: bool) {
-
-    let avc = AVC::new();
-
-    //TODO: load waypoints from file
-    let waypoints: Vec<Location> = vec![
-        Location::new(39.94177796143009, -105.08160397410393),
-        Location::new(39.94190648894769, -105.08158653974533),
-        Location::new(39.94186741660787, -105.08174613118172),
-    ];
-
-    let video = Video::new(0);
-
-    let mut io = IO {
-        gps: GPS::new(conf.gps_device),
-        imu: Compass::new(conf.imu_device),
-        qik: if enable_motors { Some(Qik::new(String::from(conf.qik_device), 0)) } else { None },
-        video: &video
-    };
-
-    io.gps.start_thread();
-    io.imu.start_thread();
-
-    // sharing state with a Mutex rather than using channels due to the producer and consumer
-    // operating at such different rates and the producer only needing the latest state 24
-    // times per second
-//    let shared_state = Arc::new(Mutex::new(Box::new(State::new())));
-
-    // start the thread to write the video
-    let video_state = avc.shared_state.clone();
-    let video_thread = thread::spawn(move || {
-        let video = Video::new(0);
-        let start = UTC::now().timestamp();
-        let filename = format!("avc-{}.mp4", start);
-        println!("Writing video to {}", filename);
-        video.init(filename).unwrap();
-        let mut frame = 0;
-        loop {
-            frame += 1;
-
-            //TODO: remove this temp hacking once we have start/start interface
-            if frame == 240 {
-                break;
-            }
-
-            let now = UTC::now();
-            let elapsed = now.timestamp() - start;
-
-            video.capture();
-
-            {
-                let s = video_state.lock().unwrap();
-                println!("{:?}", *s);
-
-                if s.finished {
-                    break;
-                }
-                augment_video(&video, &s, now, elapsed, frame);
-            }
-
-            video.write();
-        }
-
-        println!("Closing video file");
-        video.close();
-    });
-
-    //TODO: wait for start button
-
-    let mut state = State::new();
-    let nav_state = avc.shared_state.clone();
-    for (i, waypoint) in waypoints.iter().enumerate() {
-        println!("Heading for waypoint {} at {:?}", i+1, waypoint);
-        navigate_to_waypoint(i+1, &waypoint, &mut io, &mut state, &nav_state, &avc.settings);
-    }
-
-    match io.qik {
-        None => {},
-        Some(ref mut q) => {
-            q.set_brake(Motor::M0, 127);
-            q.set_brake(Motor::M1, 127);
-        }
-    }
-
-    // wait for video writer to finish
-    video_thread.join().unwrap();
-
-    println!("Finished");
-}
 
 

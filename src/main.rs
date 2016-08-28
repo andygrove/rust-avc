@@ -66,9 +66,31 @@ fn main() {
     else if matches.opt_present("i") { test_imu(&conf); }
     else if matches.opt_present("m") { test_motors(&conf); }
     else if matches.opt_present("u") { panic!("not implemented"); }
-    else if matches.opt_present("t") { avc(&conf, false); }
+    else if matches.opt_present("t") { run_avc(&conf); }
     else if matches.opt_present("a") { start_server(); }
     else { panic!("missing cmd line argument .. try --help"); }
+
+}
+
+fn run_avc(conf: &Config) {
+
+    //TODO: load waypoints from file
+    let waypoints: Vec<Location> = vec![
+        Location::new(39.94177796143009, -105.08160397410393),
+        Location::new(39.94190648894769, -105.08158653974533),
+        Location::new(39.94186741660787, -105.08174613118172),
+    ];
+
+    //TODO: load settings from file
+    let settings = Settings {
+        max_speed: 127,
+        differential_drive_coefficient: 5_f32,
+        enable_motors: false,
+        waypoints: waypoints
+    };
+
+    let avc = AVC::new(&conf, &settings);
+    avc.run();
 
 }
 
