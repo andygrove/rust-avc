@@ -170,8 +170,8 @@ fn run_avc(conf: Config) {
 
             },
             Err(ref e) => {
-                println!("{:?}", e);
-                let mut r = Response::with((status::Ok, "Error"));
+                let mut r = Response::with((status::Ok,
+                    "<html><body><form action=\"start\"><input type=\"submit\">Start!</input></form></body></html>"));
                 r.headers.set(ContentType(Mime(TopLevel::Text, SubLevel::Html, vec![])));
                 Ok(r)
             }
