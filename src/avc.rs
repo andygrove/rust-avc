@@ -7,13 +7,14 @@ use super::compass::*;
 use super::gps::*;
 use super::Config;
 
-use chrono::*;
+use chrono::UTC;
 use navigation::*;
 
 use std::sync::mpsc::{Sender, Receiver};
 use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
 use std::thread;
+use std::time::Duration;
 
 /// the various actions the vehicle can be performing
 #[derive(Debug, Clone, PartialEq)]
@@ -256,6 +257,7 @@ pub fn avc(conf: &Config, enable_motors: bool) {
 
             }
             video.write();
+            thread::sleep(Duration::from_millis(30));
 
         }
         video.close();
