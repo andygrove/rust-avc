@@ -143,7 +143,7 @@ fn run_avc(conf: Config) {
                                 let mut r = Response::with((status::Ok,
                                                             "<html><body><form action=\"/\">\
                                                             <input type=\"hidden\" name=\"action\" value=\"stop\">\
-                                                            <input type=\"submit\" text=\"Stop!\">\
+                                                            <input type=\"submit\" value=\"Stop!\">\
                                                             </form></body></html>"));
                                 r.headers.set(ContentType(Mime(TopLevel::Text, SubLevel::Html, vec![])));
                                 Ok(r)
@@ -168,7 +168,7 @@ fn run_avc(conf: Config) {
                         let mut r = Response::with((status::Ok,
                             "<html><body><form action=\"/\">\
                             <input type=\"hidden\" name=\"action\" value=\"start\">\
-                            <input type=\"submit\" text=\"Start!\">\
+                            <input type=\"submit\" value=\"Start!\">\
                             </form></body></html>"));
                         r.headers.set(ContentType(Mime(TopLevel::Text, SubLevel::Html, vec![])));
                         Ok(r)
@@ -180,7 +180,7 @@ fn run_avc(conf: Config) {
                 let mut r = Response::with((status::Ok,
                                             "<html><body><form action=\"/\">\
                                             <input type=\"hidden\" name=\"action\" value=\"start\">\
-                                            <input type=\"submit\" text=\"Start!\">\
+                                            <input type=\"submit\" value=\"Start!\">\
                                             </form></body></html>"));
                 r.headers.set(ContentType(Mime(TopLevel::Text, SubLevel::Html, vec![])));
                 Ok(r)
