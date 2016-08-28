@@ -51,10 +51,10 @@ pub enum Action {
 #[derive(Clone,Debug)]
 pub struct State {
     loc: Option<(f64,f64)>,
-    bearing: Option<f64>,
+    bearing: Option<f32>,
     next_wp: Option<usize>,
-    wp_bearing: Option<f64>,
-    turn: Option<f64>,
+    wp_bearing: Option<f32>,
+    turn: Option<f32>,
     action: Option<Action>,
     speed: (i8,i8),
     finished: bool
@@ -96,13 +96,13 @@ fn close_enough(a: &Location, b: &Location) -> bool {
     (a.lat - b.lat).abs() < 0.000025 && (a.lon - b.lon).abs() < 0.000025
 }
 
-fn calc_bearing_diff(current_bearing: f64, wp_bearing: f64) -> f64 {
+fn calc_bearing_diff(current_bearing: f32, wp_bearing: f32) -> f32 {
     let mut ret = wp_bearing - current_bearing;
-    if ret < -180_f64 {
-        ret += 360_f64;
+    if ret < -180_f32 {
+        ret += 360_f32;
     }
-        else if ret > 180_f64 {
-            ret -= 360_f64;
+        else if ret > 180_f32 {
+            ret -= 360_f32;
         }
     ret
 }
@@ -124,8 +124,9 @@ fn calculate_motor_speed(settings: &Settings, angle: f32) -> i8 {
 }
 
 fn navigate_to_waypoint(wp_num: usize, wp: &Location, io: &mut IO,
-                        state: &mut State/*, tx: Sender<State>*/,
-                        shared_state: &Arc<Mutex<Box<State>>>) {
+                        state: &mut State,
+                        shared_state: &Arc<Mutex<Box<State>>>,
+                        settings: &Settings) {
     loop {
 
         // replace the shared state ... using a block here to limit the scope of the mutex
@@ -170,16 +171,24 @@ fn navigate_to_waypoint(wp_num: usize, wp: &Location, io: &mut IO,
                     Some(b) => {
                         state.bearing = Some(b);
                         state.set_action(Action::Navigating { waypoint: wp_num });
-                        let wp_bearing = loc.calc_bearing_to(&wp);
+                        let wp_bearing = loc.calc_bearing_to(&wp) as f32;
                         state.next_wp = Some(wp_num);
                         state.wp_bearing = Some(wp_bearing);
-                        state.turn = Some(calc_bearing_diff(b, wp_bearing));
-                        //TODO: need real algorithms here
-                        state.speed = if state.turn.unwrap() < 0_f64 {
-                            (50,100)
+                        let turn = calc_bearing_diff(b, wp_bearing);
+                        state.turn = Some(turn);
+
+                        let mut left_speed = settings.max_speed;
+                        let mut right_speed = settings.max_speed;
+
+                        if turn < 0_f32 {
+                            // turn left by reducing speed of left motor
+                            left_speed = calculate_motor_speed(&settings, turn.abs());
                         } else {
-                            (100,50)
+                            // turn right by reducing speed of right motor
+                            right_speed = calculate_motor_speed(&settings, turn.abs());
                         };
+
+                        state.speed = (left_speed, right_speed);
                         match io.qik {
                             None => {},
                             Some(ref mut q) => {
@@ -258,6 +267,8 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
 }
 pub fn avc(conf: &Config, enable_motors: bool) {
 
+    let settings = Settings::new();
+
     //TODO: load waypoints from file
     let waypoints: Vec<Location> = vec![
         Location::new(39.94177796143009, -105.08160397410393),
@@ -324,7 +335,7 @@ pub fn avc(conf: &Config, enable_motors: bool) {
     let nav_state = shared_state.clone();
     for (i, waypoint) in waypoints.iter().enumerate() {
         println!("Heading for waypoint {} at {:?}", i+1, waypoint);
-        navigate_to_waypoint(i+1, &waypoint, &mut io, &mut state, &nav_state);
+        navigate_to_waypoint(i+1, &waypoint, &mut io, &mut state, &nav_state, &settings);
     }
 
     match io.qik {

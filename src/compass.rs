@@ -8,12 +8,12 @@ use std::io::prelude::*;
 use self::serial::prelude::*;
 
 pub struct Bearing {
-    value: Option<f64>
+    value: Option<f32>
 }
 
 impl Bearing {
 
-    fn set(&mut self, n: f64) {
+    fn set(&mut self, n: f32) {
         self.value = Some(n);
     }
 
@@ -65,7 +65,7 @@ impl Compass {
                         buf.push(ch);
                     } else if ch == '\n' {
                         let sentence = String::from(&buf[..]);
-                        match sentence.parse::<f64>() {
+                        match sentence.parse::<f32>() {
                             Ok(n) => {
                                 //println!("bearing: {}", n);
                                 compass_bearing.lock().unwrap().set(n);
@@ -80,7 +80,7 @@ impl Compass {
         });
     }
 
-    pub fn get(&self) -> Option<f64> {
+    pub fn get(&self) -> Option<f32> {
         self.bearing.lock().unwrap().value
     }
 
