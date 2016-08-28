@@ -106,7 +106,9 @@ fn run_avc(conf: Config) {
     }
 
     // wait for thread to terminate so that the video file is closed correctly
+    println!("Waiting for threads to terminate...");
     avc_thread.join().unwrap();
+    println!("Finished");
 
 }
 

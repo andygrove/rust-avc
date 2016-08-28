@@ -146,7 +146,7 @@ impl AVC {
 
                 {
                     let s = video_state.lock().unwrap();
-                    println!("{:?}", *s);
+                    //println!("{:?}", *s);
 
                     // stop capturing video at end of race
                     match s.action {
@@ -309,7 +309,6 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
     // FPS
     if elapsed > 0 {
         let fps : f32 = (frame as f32) / (elapsed as f32);
-        println!("FPS: {}", fps);
         video.draw_text(500, 25, format!("FPS: {:.*}", 1, fps));
     }
 
