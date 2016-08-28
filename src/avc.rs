@@ -255,6 +255,12 @@ pub fn avc(conf: &Config, enable_motors: bool) {
         let mut frame = 0;
         loop {
             frame += 1;
+
+            //TODO: remove this temp hacking once we have start/start interface
+            if frame == 240 {
+                break;
+            }
+
             let now = UTC::now();
             let elapsed = now.timestamp() - start;
 
