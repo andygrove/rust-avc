@@ -17,6 +17,22 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
+struct Settings {
+    max_speed: i8,
+    differential_drive_coefficient: f32
+
+}
+
+impl Settings {
+
+    fn new() -> Self {
+        Settings {
+            max_speed: 127,
+            differential_drive_coefficient: 5_f32
+        }
+    }
+}
+
 /// the various actions the vehicle can be performing
 #[derive(Debug, Clone, PartialEq)]
 pub enum Action {
@@ -91,6 +107,22 @@ fn calc_bearing_diff(current_bearing: f64, wp_bearing: f64) -> f64 {
     ret
 }
 
+
+
+/// Calculate motor speed based on angle of turn.
+fn calculate_motor_speed(settings: &Settings, angle: f32) -> i8 {
+    if angle > 40_f32 {
+        // sharp turn
+        return 0;
+    }
+    let mut temp = angle * settings.differential_drive_coefficient;
+    if temp > 180_f32 {
+        temp = 180_f32;
+    }
+    let coefficient = (180_f32 - temp) / 180_f32;
+    (coefficient * (settings.max_speed as f32)) as i8
+}
+
 fn navigate_to_waypoint(wp_num: usize, wp: &Location, io: &mut IO,
                         state: &mut State/*, tx: Sender<State>*/,
                         shared_state: &Arc<Mutex<Box<State>>>) {
@@ -142,15 +174,15 @@ fn navigate_to_waypoint(wp_num: usize, wp: &Location, io: &mut IO,
                         state.next_wp = Some(wp_num);
                         state.wp_bearing = Some(wp_bearing);
                         state.turn = Some(calc_bearing_diff(b, wp_bearing));
+                        //TODO: need real algorithms here
+                        state.speed = if state.turn.unwrap() < 0_f64 {
+                            (50,100)
+                        } else {
+                            (100,50)
+                        };
                         match io.qik {
                             None => {},
                             Some(ref mut q) => {
-                                //TODO: need real algorithms here
-                                state.speed = if state.turn.unwrap() < 0_f64 {
-                                    (50,100)
-                                } else {
-                                    (100,50)
-                                };
                                 q.set_speed(Motor::M0, state.speed.0);
                                 q.set_speed(Motor::M1, state.speed.1);
                             }
