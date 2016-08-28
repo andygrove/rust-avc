@@ -95,20 +95,28 @@ fn run_avc(conf: Config) {
 
     let avc = AVC::new(conf, settings);
 
-    let shared_state = avc.get_shared_state();
+    let start_state = avc.get_shared_state();
+    let web_state = avc.get_shared_state();
 
     let avc_thread = thread::spawn(move || {
+
+        // wait for the user to hit the start button
+        println!("Waiting for start command");
+        loop {
+            {
+                let mut state = start_state.lock().unwrap();
+                match &state.action {
+                    &   Action::WaitingForStartCommand => {},
+                    _ => break
+                };
+            }
+            thread::sleep(Duration::from_millis(10));
+        }
+
+        // run!
         avc.run();
+
     });
-
-//    fn abort(shared_state: Arc<Mutex<Box<State>>>) {
-//        println!("Aborting...");
-//        let mut state = shared_state.lock().unwrap();
-//        state.set_action(Action::Aborted);
-//    }
-
-//    fn process_request(req: &mut Request) -> IronResult<Response> {
-//    }
 
     Iron::new(move |req: &mut Request| {
 
@@ -120,11 +128,17 @@ fn run_avc(conf: Config) {
                     Some(ref a) => {
                         match a[0].as_ref() {
                             "start" => {
+                                {
+                                    let mut state = web_state.lock().unwrap();
+                                    state.set_action(Action::Navigating { waypoint: 1 });
+                                }
                                 Ok(Response::with((status::Ok, "Started!")))
                             },
                             "stop" => {
-                                let mut state = shared_state.lock().unwrap();
-                                state.set_action(Action::Aborted);
+                                {
+                                    let mut state = web_state.lock().unwrap();
+                                    state.set_action(Action::Aborted);
+                                }
                                 Ok(Response::with((status::Ok, "Stopped!")))
                             },
                             _ => Ok(Response::with((status::Ok, "Huh?")))
@@ -141,26 +155,6 @@ fn run_avc(conf: Config) {
         }
 
     }).http("0.0.0.0:8080").unwrap();
-
-    //
-//    thread::sleep(Duration::from_millis(10000));
-//
-//
-//    // wait for thread to terminate so that the video file is closed correctly
-//    println!("Waiting for threads to terminate...");
-//    avc_thread.join().unwrap();
-//    println!("Finished");
-
-}
-
-/// web server to interact with the code e.g. start / stop navigation
-struct Server {
-    shared_state: Arc<Mutex<Box<State>>>
-}
-
-impl Server {
-
-
 
 }
 

@@ -28,14 +28,14 @@ pub struct Settings {
 /// the various actions the vehicle can be performing
 #[derive(Debug, Clone, PartialEq)]
 pub enum Action {
-    Initializing,
+    WaitingForStartCommand,
     Navigating { waypoint: usize },
     ReachedWaypoint { waypoint: usize },
     WaitingForGps,
     WaitingForCompass,
-    AvoidingObstacleToLeft,
-    AvoidingObstacleToRight,
-    EmergencyStop,
+//    AvoidingObstacleToLeft,
+//    AvoidingObstacleToRight,
+//    EmergencyStop,
     Finished,
     Aborted
 }
@@ -47,7 +47,7 @@ pub struct State {
     bearing: Option<f32>,
     waypoint: Option<(usize, f32)>, // waypoint number and bearing
     turn: Option<f32>,
-    action: Option<Action>,
+    pub action: Action,
     speed: (i8,i8),
 }
 
@@ -59,19 +59,16 @@ impl State {
             bearing: None,
             waypoint: None,
             turn: None,
-            action: None,
+            action: Action::WaitingForStartCommand,
             speed: (0,0),
         }
     }
 
     pub fn set_action(&mut self, a: Action) {
-        match self.action {
-            None => println!("Action: {:?}", a),
-            Some(ref b) => if &a != b {
-                println!("Action: {:?}", a);
-            }
+        if self.action != a {
+            println!("Action: {:?}", a);
         }
-        self.action = Some(a);
+        self.action = a;
     }
 
 }
@@ -150,7 +147,7 @@ impl AVC {
 
                     // stop capturing video at end of race
                     match s.action {
-                        Some(Action::Finished) | Some(Action::Aborted) => {
+                        Action::Finished | Action::Aborted => {
                             println!("Aborting video writer thread");
                             break;
                         },
@@ -200,7 +197,7 @@ impl AVC {
                 let mut x = nav_state.lock().unwrap();
 
                 match x.action {
-                    Some(Action::Finished) | Some(Action::Aborted) => {
+                    Action::Finished | Action::Aborted => {
                         println!("Aborting navigation to waypoint {}", wp_num);
                         return false;
                     },
@@ -359,10 +356,7 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
     y += line_height;
 
     // action
-    video.draw_text(30, y, match s.action {
-        Some(ref a) => format!("{:?}", a),
-        None => format!("")
-    });
+    video.draw_text(30, y, format!("{:?}", s.action));
 
 }
 
