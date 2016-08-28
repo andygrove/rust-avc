@@ -1,3 +1,4 @@
+extern crate hyper;
 extern crate iron;
 extern crate urlencoded;
 extern crate getopts;
@@ -12,6 +13,8 @@ use qik::*;
 use iron::prelude::*;
 use iron::status;
 use urlencoded::UrlEncodedQuery;
+use hyper::header::{Headers, ContentType};
+use hyper::mime::{Mime, TopLevel, SubLevel};
 
 use std::collections::HashMap;
 use std::env;
@@ -122,6 +125,11 @@ fn run_avc(conf: Config) {
 
         println!("URL: {}", req.url);
 
+//        let mut headers = Headers::new();
+//        headers.set(
+//            ContentType(Mime(TopLevel::Text, SubLevel::Html, vec![]))
+//        );
+
         match req.get_ref::<UrlEncodedQuery>() {
             Ok(ref hashmap) => {
                 match hashmap.get("action") {
@@ -132,32 +140,47 @@ fn run_avc(conf: Config) {
                                     let mut state = web_state.lock().unwrap();
                                     state.set_action(Action::Navigating { waypoint: 1 });
                                 }
-                                Ok(Response::with((status::Ok, "<html><body><form action=\"stop\"><input type=\"submit\">Stop!</input></form></body></html>")))
+                                let mut r = Response::with((status::Ok, "<html><body><form action=\"stop\"><input type=\"submit\">Stop!</input></form></body></html>"));
+                                r.headers.set(ContentType(Mime(TopLevel::Text, SubLevel::Html, vec![])));
+                                Ok(r)
                             },
                             "stop" => {
                                 {
                                     let mut state = web_state.lock().unwrap();
                                     state.set_action(Action::Aborted);
                                 }
-                                Ok(Response::with((status::Ok, "Stopped! You'll need to restart the app now")))
+                                let mut r = Response::with((status::Ok, "Stopped! You'll need to restart the app now"));
+                                r.headers.set(ContentType(Mime(TopLevel::Text, SubLevel::Html, vec![])));
+                                Ok(r)
                             },
-                            _ => Ok(Response::with((status::Ok, "Did not recognize action")))
+                            _ => {
+                                let mut r = Response::with((status::Ok, "Did not recognize action"));
+                                r.headers.set(ContentType(Mime(TopLevel::Text, SubLevel::Html, vec![])));
+                                Ok(r)
+                            }
                         }
                     },
-                    None => Ok(Response::with((status::Ok,
-                                   "<html><body><form action=\"start\"><input type=\"submit\">Start!</input></form></body></html>")))
+                    None => {
+                        let mut r = Response::with((status::Ok,
+                        "<html><body><form action=\"start\"><input type=\"submit\">Start!</input></form></body></html>"));
+                        r.headers.set(ContentType(Mime(TopLevel::Text, SubLevel::Html, vec![])));
+                        Ok(r)
+                    }
                 }
 
             },
             Err(ref e) => {
                 println!("{:?}", e);
-                Ok(Response::with((status::Ok, "Error")))
+                let mut r = Response::with((status::Ok, "Error"));
+                r.headers.set(ContentType(Mime(TopLevel::Text, SubLevel::Html, vec![])));
+                Ok(r)
             }
         }
 
     }).http("0.0.0.0:8080").unwrap();
 
 }
+
 
 fn test_gps(conf: &Config) {
     println!("Testing GPS");
