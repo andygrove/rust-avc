@@ -33,9 +33,9 @@ pub enum Action {
 #[derive(Clone,Debug)]
 pub struct State {
     loc: Option<(f64,f64)>,
-    bearing: Option<f32>,
-    next_wp: Option<u8>,
-    wp_bearing: Option<f32>,
+    bearing: Option<f64>,
+    next_wp: Option<usize>,
+    wp_bearing: Option<f64>,
     action: Option<Action>,
     speed: (i8,i8),
     finished: bool
@@ -102,6 +102,7 @@ fn navigate_to_waypoint(wp_num: usize, wp: &Location, io: &mut IO,
 
         match io.gps.get() {
             None => {
+                state.loc = None;
                 state.set_action(Action::WaitingForGps);
                 match io.qik {
                     None => {},
@@ -113,6 +114,7 @@ fn navigate_to_waypoint(wp_num: usize, wp: &Location, io: &mut IO,
                 }
             },
             Some(loc) => {
+                state.loc = Some((loc.lat, loc.lon));
                 if close_enough(&loc, &wp) {
                     state.set_action(Action::ReachedWaypoint { waypoint: wp_num });
                     break;
@@ -120,6 +122,7 @@ fn navigate_to_waypoint(wp_num: usize, wp: &Location, io: &mut IO,
 
                 match io.imu.get() {
                     None => {
+                        state.bearing = None;
                         state.set_action(Action::WaitingForCompass);
                         match io.qik {
                             None => {},
@@ -131,8 +134,11 @@ fn navigate_to_waypoint(wp_num: usize, wp: &Location, io: &mut IO,
                         }
                     },
                     Some(b) => {
+                        state.bearing = Some(b);
                         state.set_action(Action::Navigating { waypoint: wp_num });
                         let wp_bearing = loc.calc_bearing_to(&wp);
+                        state.next_wp = Some(wp_num);
+                        state.wp_bearing = Some(wp_bearing);
                         let turn_amount = calc_bearing_diff(b, wp_bearing);
                         match io.qik {
                             None => {},
@@ -202,11 +208,8 @@ pub fn avc(conf: &Config, enable_motors: bool) {
                     break;
                 }
 
-
                 let mut y = 30;
                 let mut line_height = 30;
-
-                video.capture();
 
                 // Time
                 video.draw_text(30, y, format!("UTC: {}", now));
