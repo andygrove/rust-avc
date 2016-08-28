@@ -49,7 +49,6 @@ pub struct State {
     turn: Option<f32>,
     action: Option<Action>,
     speed: (i8,i8),
-    finished: bool
 }
 
 impl State {
@@ -62,7 +61,6 @@ impl State {
             turn: None,
             action: None,
             speed: (0,0),
-            finished: false
         }
     }
 
@@ -141,11 +139,6 @@ impl AVC {
             loop {
                 frame += 1;
 
-                //TODO: remove this temp hacking once we have start/start interface
-                if frame == 240 {
-                    break;
-                }
-
                 let now = UTC::now();
                 let elapsed = now.timestamp() - start;
 
@@ -155,9 +148,13 @@ impl AVC {
                     let s = video_state.lock().unwrap();
                     println!("{:?}", *s);
 
-                    if s.finished {
-                        break;
-                    }
+                    // stop capturing video at end of race
+                    match s.action {
+                        Some(Action::Finished) => break,
+                        Some(Action::Aborted) => break,
+                        _ => {}
+                    };
+
                     augment_video(&video, &s, now, elapsed, frame);
                 }
 
