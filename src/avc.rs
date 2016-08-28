@@ -16,7 +16,7 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 
 /// the various actions the vehicle can be performing
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Action {
     Initializing,
     Navigating { waypoint: usize },
@@ -36,7 +36,7 @@ pub struct State {
     bearing: Option<f32>,
     next_wp: Option<u8>,
     wp_bearing: Option<f32>,
-    action: Option<String>,
+    action: Option<Action>,
     speed: (i8,i8),
     finished: bool
 }
@@ -51,9 +51,13 @@ impl State {
     }
 
     fn set_action(&mut self, a: Action) {
-        //println!("Action: {:?}", a);
-        self.action = Some(format!("{:?}", a));
-
+        match self.action {
+            None => println!("Action: {:?}", a),
+            Some(ref b) => if &a != b {
+                println!("Action: {:?}", a);
+            }
+        }
+        self.action = Some(a);
     }
 
 }
@@ -81,18 +85,11 @@ fn calc_bearing_diff(current_bearing: f64, wp_bearing: f64) -> f64 {
     ret
 }
 
-fn navigate_to_waypoint(wp_num: usize, wp: &Location, io: &mut IO, state: &mut State, instr: &Arc<Mutex<State>>) {
+fn navigate_to_waypoint(wp_num: usize, wp: &Location, io: &mut IO, state: &mut State, tx: Sender<State>) {
     loop {
 
-        {
-            let mut z = instr.lock().unwrap();
-
-            z.action = match state.action {
-                Some(ref a) => Some(a.clone()),
-                None => None
-            }
-        }
-
+        // send a copy of the state to the video writer thread
+        tx.send(state.clone());
 
         match io.gps.get() {
             None => {
@@ -148,6 +145,12 @@ fn navigate_to_waypoint(wp_num: usize, wp: &Location, io: &mut IO, state: &mut S
     }
 }
 
+struct VideoWriter {
+    last_state: Arc<Mutex<State>>
+}
+
+
+
 pub fn avc(conf: &Config, enable_motors: bool) {
 
     //TODO: load waypoints from file
@@ -167,12 +170,12 @@ pub fn avc(conf: &Config, enable_motors: bool) {
     };
 
     // set up a channel to send state info to video writer
-    //let (tx, rx): (Sender<State>, Receiver<State>) = mpsc::channel();
+    let (tx, rx): (Sender<State>, Receiver<State>) = mpsc::channel();
 
-    let state = Arc::new(Mutex::new(State::new()));
+    let video_writer = VideoWriter { last_state: Arc::new(Mutex::new(State::new())) };
 
     // start the thread to write the video
-    let video_state = state.clone();
+//    let video_state = car.state.clone();
     let video_thread = thread::spawn(move || {
         let video = Video::new(0);
         let start = UTC::now().timestamp();
@@ -189,63 +192,63 @@ pub fn avc(conf: &Config, enable_motors: bool) {
             }
 
             video.capture();
-            {
-                let s = video_state.lock().unwrap();
-
-                if s.finished {
-                    break;
-                }
-
-
-                let mut y = 30;
-                let mut line_height = 30;
-
-                video.capture();
-
-                // Time
-                video.draw_text(30, y, format!("UTC: {}", now));
-                y += line_height;
-
-                // FPS
-                if elapsed > 0 {
-                    video.draw_text(30, y, format!("FPS: {:.*}", 1, (i+1) / elapsed));
-                    y += line_height;
-                }
-
-                // GPS
-                video.draw_text(30, y, match s.loc {
-                    None => format!("GPS: N/A"),
-                    Some((lat,lon)) => format!("GPS: {:.*}, {:.*}", 6, lat, 6, lon)
-                });
-                y += line_height;
-
-                // compass
-                video.draw_text(30, y, match s.bearing {
-                    None => format!("Compass: N/A"),
-                    Some(b) => format!("Compass: {:.*}", 1, b)
-                });
-                y += line_height;
-
-                // next waypoint number
-                video.draw_text(30, y, match s.bearing {
-                    None => format!("Next WP: N/A"),
-                    Some(wp) => format!("Next WP: {}", wp)
-                });
-                y += line_height;
-
-                // bearing for next waypoint
-                video.draw_text(30, y, match s.wp_bearing {
-                    None => format!("WP Bearing: N/A"),
-                    Some(b) => format!("WP Bearing: {}", b)
-                });
-                y += line_height;
-
-                video.draw_text(30, y, match s.action {
-                    Some(ref a) => format!("{}", a),
-                    None => format!("   ")
-                });
-
-            }
+//            {
+//                let s = State::new(); //video_state.lock().unwrap();
+//
+//                if s.finished {
+//                    break;
+//                }
+//
+//
+//                let mut y = 30;
+//                let mut line_height = 30;
+//
+//                video.capture();
+//
+//                // Time
+//                video.draw_text(30, y, format!("UTC: {}", now));
+//                y += line_height;
+//
+//                // FPS
+//                if elapsed > 0 {
+//                    video.draw_text(30, y, format!("FPS: {:.*}", 1, (i+1) / elapsed));
+//                    y += line_height;
+//                }
+//
+//                // GPS
+//                video.draw_text(30, y, match s.loc {
+//                    None => format!("GPS: N/A"),
+//                    Some((lat,lon)) => format!("GPS: {:.*}, {:.*}", 6, lat, 6, lon)
+//                });
+//                y += line_height;
+//
+//                // compass
+//                video.draw_text(30, y, match s.bearing {
+//                    None => format!("Compass: N/A"),
+//                    Some(b) => format!("Compass: {:.*}", 1, b)
+//                });
+//                y += line_height;
+//
+//                // next waypoint number
+//                video.draw_text(30, y, match s.bearing {
+//                    None => format!("Next WP: N/A"),
+//                    Some(wp) => format!("Next WP: {}", wp)
+//                });
+//                y += line_height;
+//
+//                // bearing for next waypoint
+//                video.draw_text(30, y, match s.wp_bearing {
+//                    None => format!("WP Bearing: N/A"),
+//                    Some(b) => format!("WP Bearing: {}", b)
+//                });
+//                y += line_height;
+//
+//                video.draw_text(30, y, match s.action {
+//                    Some(ref a) => format!("{}", a),
+//                    None => format!("   ")
+//                });
+//
+//            }
             video.write();
 
         }
@@ -254,24 +257,21 @@ pub fn avc(conf: &Config, enable_motors: bool) {
 
     //TODO: wait for start button
 
-    // navigate to each waypoint in turn
-    let mut state_buf = State::new();
-    let shared_state = state.clone();
+    let mut state = State::new();
     for (i, waypoint) in waypoints.iter().enumerate() {
         println!("Heading for waypoint {} at {:?}", i+1, waypoint);
-//        let thread_tx = tx.clone();
-//        thread_tx.send(state.clone()).unwrap();
-        navigate_to_waypoint(i+1, &waypoint, &mut io, &mut state_buf, &shared_state);
+        let thread_tx = tx.clone();
+        thread_tx.send(state.clone()).unwrap();
+        navigate_to_waypoint(i+1, &waypoint, &mut io, &mut state, thread_tx);
     }
 
-
-//    match io.qik {
-//        None => {},
-//        Some(q) => {
-//            q.set_brake(Motor::M0, 127);
-//            q.set_brake(Motor::M1, 127);
-//        }
-//    }
+    match io.qik {
+        None => {},
+        Some(ref mut q) => {
+            q.set_brake(Motor::M0, 127);
+            q.set_brake(Motor::M1, 127);
+        }
+    }
 
     // wait for video writer to finish
     video_thread.join().unwrap();
