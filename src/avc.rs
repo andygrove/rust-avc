@@ -70,6 +70,8 @@ struct IO<'a> {
     video: &'a Video
 }
 
+
+
 fn close_enough(a: &Location, b: &Location) -> bool {
     (a.lat - b.lat).abs() < 0.000025 && (a.lon - b.lon).abs() < 0.000025
 }
@@ -85,11 +87,18 @@ fn calc_bearing_diff(current_bearing: f64, wp_bearing: f64) -> f64 {
     ret
 }
 
-fn navigate_to_waypoint(wp_num: usize, wp: &Location, io: &mut IO, state: &mut State, tx: Sender<State>) {
+fn navigate_to_waypoint(wp_num: usize, wp: &Location, io: &mut IO,
+                        state: &mut State/*, tx: Sender<State>*/,
+                        shared_state: &Arc<Mutex<Box<State>>>) {
     loop {
 
         // send a copy of the state to the video writer thread
-        tx.send(state.clone());
+//        tx.send(state.clone());
+
+        {
+            let mut x = shared_state.lock().unwrap();
+            *x = Box::new(state.clone());
+        }
 
         match io.gps.get() {
             None => {
@@ -145,12 +154,6 @@ fn navigate_to_waypoint(wp_num: usize, wp: &Location, io: &mut IO, state: &mut S
     }
 }
 
-struct VideoWriter {
-    last_state: Arc<Mutex<State>>
-}
-
-
-
 pub fn avc(conf: &Config, enable_motors: bool) {
 
     //TODO: load waypoints from file
@@ -169,13 +172,10 @@ pub fn avc(conf: &Config, enable_motors: bool) {
         video: &video
     };
 
-    // set up a channel to send state info to video writer
-    let (tx, rx): (Sender<State>, Receiver<State>) = mpsc::channel();
-
-    let video_writer = VideoWriter { last_state: Arc::new(Mutex::new(State::new())) };
+    let shared_state = Arc::new(Mutex::new(Box::new(State::new())));
 
     // start the thread to write the video
-//    let video_state = car.state.clone();
+    let video_state = shared_state.clone();
     let video_thread = thread::spawn(move || {
         let video = Video::new(0);
         let start = UTC::now().timestamp();
@@ -192,63 +192,63 @@ pub fn avc(conf: &Config, enable_motors: bool) {
             }
 
             video.capture();
-//            {
-//                let s = State::new(); //video_state.lock().unwrap();
-//
-//                if s.finished {
-//                    break;
-//                }
-//
-//
-//                let mut y = 30;
-//                let mut line_height = 30;
-//
-//                video.capture();
-//
-//                // Time
-//                video.draw_text(30, y, format!("UTC: {}", now));
-//                y += line_height;
-//
-//                // FPS
-//                if elapsed > 0 {
-//                    video.draw_text(30, y, format!("FPS: {:.*}", 1, (i+1) / elapsed));
-//                    y += line_height;
-//                }
-//
-//                // GPS
-//                video.draw_text(30, y, match s.loc {
-//                    None => format!("GPS: N/A"),
-//                    Some((lat,lon)) => format!("GPS: {:.*}, {:.*}", 6, lat, 6, lon)
-//                });
-//                y += line_height;
-//
-//                // compass
-//                video.draw_text(30, y, match s.bearing {
-//                    None => format!("Compass: N/A"),
-//                    Some(b) => format!("Compass: {:.*}", 1, b)
-//                });
-//                y += line_height;
-//
-//                // next waypoint number
-//                video.draw_text(30, y, match s.bearing {
-//                    None => format!("Next WP: N/A"),
-//                    Some(wp) => format!("Next WP: {}", wp)
-//                });
-//                y += line_height;
-//
-//                // bearing for next waypoint
-//                video.draw_text(30, y, match s.wp_bearing {
-//                    None => format!("WP Bearing: N/A"),
-//                    Some(b) => format!("WP Bearing: {}", b)
-//                });
-//                y += line_height;
-//
-//                video.draw_text(30, y, match s.action {
-//                    Some(ref a) => format!("{}", a),
-//                    None => format!("   ")
-//                });
-//
-//            }
+            {
+                let s = video_state.lock().unwrap();
+
+                if s.finished {
+                    break;
+                }
+
+
+                let mut y = 30;
+                let mut line_height = 30;
+
+                video.capture();
+
+                // Time
+                video.draw_text(30, y, format!("UTC: {}", now));
+                y += line_height;
+
+                // FPS
+                if elapsed > 0 {
+                    video.draw_text(30, y, format!("FPS: {:.*}", 1, (i+1) / elapsed));
+                    y += line_height;
+                }
+
+                // GPS
+                video.draw_text(30, y, match s.loc {
+                    None => format!("GPS: N/A"),
+                    Some((lat,lon)) => format!("GPS: {:.*}, {:.*}", 6, lat, 6, lon)
+                });
+                y += line_height;
+
+                // compass
+                video.draw_text(30, y, match s.bearing {
+                    None => format!("Compass: N/A"),
+                    Some(b) => format!("Compass: {:.*}", 1, b)
+                });
+                y += line_height;
+
+                // next waypoint number
+                video.draw_text(30, y, match s.bearing {
+                    None => format!("Next WP: N/A"),
+                    Some(wp) => format!("Next WP: {}", wp)
+                });
+                y += line_height;
+
+                // bearing for next waypoint
+                video.draw_text(30, y, match s.wp_bearing {
+                    None => format!("WP Bearing: N/A"),
+                    Some(b) => format!("WP Bearing: {}", b)
+                });
+                y += line_height;
+
+                video.draw_text(30, y, match s.action {
+                    Some(ref a) => format!("{:?}", a),
+                    None => format!("   ")
+                });
+
+            }
             video.write();
 
         }
@@ -258,11 +258,12 @@ pub fn avc(conf: &Config, enable_motors: bool) {
     //TODO: wait for start button
 
     let mut state = State::new();
+    let nav_state = shared_state.clone();
     for (i, waypoint) in waypoints.iter().enumerate() {
         println!("Heading for waypoint {} at {:?}", i+1, waypoint);
-        let thread_tx = tx.clone();
-        thread_tx.send(state.clone()).unwrap();
-        navigate_to_waypoint(i+1, &waypoint, &mut io, &mut state, thread_tx);
+//        let thread_tx = tx.clone();
+//        thread_tx.send(state.clone()).unwrap();
+        navigate_to_waypoint(i+1, &waypoint, &mut io, &mut state /*, thread_tx*/, &nav_state);
     }
 
     match io.qik {
