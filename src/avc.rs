@@ -251,14 +251,14 @@ pub fn avc(conf: &Config, enable_motors: bool) {
                 // bearing for next waypoint
                 video.draw_text(30, y, match s.wp_bearing {
                     None => format!("WP Bearing: N/A"),
-                    Some(b) => format!("WP Bearing: {} °", b)
+                    Some(b) => format!("WP Bearing: {:.*} °", 1, b)
                 });
                 y += line_height;
 
                 // bearing for next waypoint
-                video.draw_text(30, y, match s.wp_bearing {
+                video.draw_text(30, y, match s.turn {
                     None => format!("Turn: N/A"),
-                    Some(b) => format!("Turn: {}", b)
+                    Some(b) => format!("Turn: {:.*}", 1, b)
                 });
                 y += line_height;
 
