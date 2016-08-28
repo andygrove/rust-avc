@@ -140,7 +140,11 @@ fn run_avc(conf: Config) {
                                     let mut state = web_state.lock().unwrap();
                                     state.set_action(Action::Navigating { waypoint: 1 });
                                 }
-                                let mut r = Response::with((status::Ok, "<html><body><form action=\"stop\"><input type=\"submit\">Stop!</input></form></body></html>"));
+                                let mut r = Response::with((status::Ok,
+                                                            "<html><body><form action=\"/\">\
+                                                            <input type=\"hidden\" name=\"action\" value=\"stop\">\
+                                                            <input type=\"submit\" text=\"Stop!\">\
+                                                            </form></body></html>"));
                                 r.headers.set(ContentType(Mime(TopLevel::Text, SubLevel::Html, vec![])));
                                 Ok(r)
                             },
@@ -162,7 +166,10 @@ fn run_avc(conf: Config) {
                     },
                     None => {
                         let mut r = Response::with((status::Ok,
-                        "<html><body><form action=\"start\"><input type=\"submit\">Start!</input></form></body></html>"));
+                            "<html><body><form action=\"/\">\
+                            <input type=\"hidden\" name=\"action\" value=\"start\">\
+                            <input type=\"submit\" text=\"Start!\">\
+                            </form></body></html>"));
                         r.headers.set(ContentType(Mime(TopLevel::Text, SubLevel::Html, vec![])));
                         Ok(r)
                     }
