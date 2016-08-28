@@ -81,7 +81,7 @@ curl -sSf https://static.rust-lang.org/rustup.sh | sh -s -- --channel=nightly
 
 ## Cross compiling
 
-TBD
+```cargo build --target=arm-unknown-linux-gnueabihf```
 
 ## Connecting to the pi via ethernet
 
