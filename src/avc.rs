@@ -37,6 +37,7 @@ pub struct State {
     bearing: Option<f64>,
     next_wp: Option<usize>,
     wp_bearing: Option<f64>,
+    turn: Option<f64>,
     action: Option<Action>,
     speed: (i8,i8),
     finished: bool
@@ -47,6 +48,7 @@ impl State {
     fn new() -> Self {
         State { loc: None, bearing: None,
             next_wp: None, wp_bearing: None,
+            turn: None,
             action: None, speed: (0,0),
             finished: false }
     }
@@ -140,12 +142,12 @@ fn navigate_to_waypoint(wp_num: usize, wp: &Location, io: &mut IO,
                         let wp_bearing = loc.calc_bearing_to(&wp);
                         state.next_wp = Some(wp_num);
                         state.wp_bearing = Some(wp_bearing);
-                        let turn_amount = calc_bearing_diff(b, wp_bearing);
+                        state.turn = Some(calc_bearing_diff(b, wp_bearing));
                         match io.qik {
                             None => {},
                             Some(ref mut q) => {
                                 //TODO: need real algorithms here
-                                state.speed = if turn_amount < 0_f64 {
+                                state.speed = if state.turn.unwrap() < 0_f64 {
                                     (100,200)
                                 } else {
                                     (200,100)
@@ -205,15 +207,15 @@ pub fn avc(conf: &Config, enable_motors: bool) {
             {
                 let s = video_state.lock().unwrap();
 
-                println!("Frame {}: GPS={:?}, Compass={:?}, Next WP={:?}, WP_Bearing={:?}",
-                         i, s.loc, s.bearing, s.next_wp, s.wp_bearing );
+                println!("Frame {}: GPS={:?}, Compass={:?}, Next WP={:?}, WP_Bearing={:?}, Turn={:?}",
+                         i, s.loc, s.bearing, s.next_wp, s.wp_bearing, s.turn );
 
                 if s.finished {
                     break;
                 }
 
                 let mut y = 30;
-                let mut line_height = 30;
+                let mut line_height = 25;
 
                 // Time
                 video.draw_text(30, y, format!("UTC: {}", now.format("%Y-%m-%d %H:%M:%S").to_string()));
@@ -235,7 +237,7 @@ pub fn avc(conf: &Config, enable_motors: bool) {
                 // compass
                 video.draw_text(30, y, match s.bearing {
                     None => format!("Compass: N/A"),
-                    Some(b) => format!("Compass: {:.*}", 1, b)
+                    Some(b) => format!("Compass: {:.*} °", 1, b)
                 });
                 y += line_height;
 
@@ -249,7 +251,14 @@ pub fn avc(conf: &Config, enable_motors: bool) {
                 // bearing for next waypoint
                 video.draw_text(30, y, match s.wp_bearing {
                     None => format!("WP Bearing: N/A"),
-                    Some(b) => format!("WP Bearing: {}", b)
+                    Some(b) => format!("WP Bearing: {} °", b)
+                });
+                y += line_height;
+
+                // bearing for next waypoint
+                video.draw_text(30, y, match s.wp_bearing {
+                    None => format!("Turn: N/A"),
+                    Some(b) => format!("Turn: {}", b)
                 });
                 y += line_height;
 
