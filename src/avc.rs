@@ -193,8 +193,8 @@ pub fn avc(conf: &Config, enable_motors: bool) {
         let mut i = 0;
         loop {
             i += 1;
-            let now = UTC::now().timestamp();
-            let elapsed = now - start;
+            let now = UTC::now();
+            let elapsed = now.timestamp() - start;
 
             // TEMP DEBUGGING
             if elapsed > 10 {
@@ -213,7 +213,7 @@ pub fn avc(conf: &Config, enable_motors: bool) {
                 let mut line_height = 30;
 
                 // Time
-                video.draw_text(30, y, format!("UTC: {}", now));
+                video.draw_text(30, y, format!("UTC: {}", now.format("%Y-%m-%d %H:%M:%S").to_string()));
                 y += line_height;
 
                 // FPS
@@ -237,7 +237,7 @@ pub fn avc(conf: &Config, enable_motors: bool) {
                 y += line_height;
 
                 // next waypoint number
-                video.draw_text(30, y, match s.bearing {
+                video.draw_text(30, y, match s.next_wp {
                     None => format!("Next WP: N/A"),
                     Some(wp) => format!("Next WP: {}", wp)
                 });
@@ -250,9 +250,10 @@ pub fn avc(conf: &Config, enable_motors: bool) {
                 });
                 y += line_height;
 
+                // action
                 video.draw_text(30, y, match s.action {
                     Some(ref a) => format!("{:?}", a),
-                    None => format!("   ")
+                    None => format!("")
                 });
 
             }
@@ -269,9 +270,7 @@ pub fn avc(conf: &Config, enable_motors: bool) {
     let nav_state = shared_state.clone();
     for (i, waypoint) in waypoints.iter().enumerate() {
         println!("Heading for waypoint {} at {:?}", i+1, waypoint);
-//        let thread_tx = tx.clone();
-//        thread_tx.send(state.clone()).unwrap();
-        navigate_to_waypoint(i+1, &waypoint, &mut io, &mut state /*, thread_tx*/, &nav_state);
+        navigate_to_waypoint(i+1, &waypoint, &mut io, &mut state, &nav_state);
     }
 
     match io.qik {
