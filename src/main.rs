@@ -132,25 +132,26 @@ fn run_avc(conf: Config) {
                                     let mut state = web_state.lock().unwrap();
                                     state.set_action(Action::Navigating { waypoint: 1 });
                                 }
-                                Ok(Response::with((status::Ok, "Started!")))
+                                Ok(Response::with((status::Ok, "<html><body><form action=\"stop\"><input type=\"submit\">Stop!</input></form></body></html>")))
                             },
                             "stop" => {
                                 {
                                     let mut state = web_state.lock().unwrap();
                                     state.set_action(Action::Aborted);
                                 }
-                                Ok(Response::with((status::Ok, "Stopped!")))
+                                Ok(Response::with((status::Ok, "Stopped! You'll need to restart the app now")))
                             },
-                            _ => Ok(Response::with((status::Ok, "Huh?")))
+                            _ => Ok(Response::with((status::Ok, "Did not recognize action")))
                         }
                     },
-                    None => Ok(Response::with((status::Ok, "Missing action")))
+                    None => Ok(Response::with((status::Ok,
+                                   "<html><body><form action=\"start\"><input type=\"submit\">Start!</input></form></body></html>")))
                 }
 
             },
             Err(ref e) => {
                 println!("{:?}", e);
-                Ok(Response::with((status::Ok, "Hello World!")))
+                Ok(Response::with((status::Ok, "Error")))
             }
         }
 
