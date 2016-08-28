@@ -1,4 +1,5 @@
-
+extern crate iron;
+extern crate urlencoded;
 extern crate getopts;
 extern crate chrono;
 extern crate navigation;
@@ -8,10 +9,15 @@ use getopts::Options;
 use chrono::UTC;
 use navigation::*;
 use qik::*;
+use iron::prelude::*;
+use iron::status;
+use urlencoded::UrlEncodedQuery;
 
+use std::collections::HashMap;
 use std::env;
 use std::sync::mpsc::{Sender, Receiver};
 use std::sync::mpsc;
+use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
@@ -19,13 +25,11 @@ mod gps;
 mod compass;
 mod video;
 mod avc;
-mod server;
 
 use gps::GPS;
 use compass::Compass;
 use video::Video;
 use avc::*;
-use server::*;
 
 pub struct Config {
     gps_device: &'static str,
@@ -67,7 +71,7 @@ fn main() {
     else if matches.opt_present("m") { test_motors(&conf); }
     else if matches.opt_present("u") { panic!("not implemented"); }
     else if matches.opt_present("t") { run_avc(conf); }
-    else if matches.opt_present("a") { start_server(); }
+    else if matches.opt_present("a") { run_avc(conf); }
     else { panic!("missing cmd line argument .. try --help"); }
 
 }
@@ -97,18 +101,66 @@ fn run_avc(conf: Config) {
         avc.run();
     });
 
-    thread::sleep(Duration::from_millis(10000));
+//    fn abort(shared_state: Arc<Mutex<Box<State>>>) {
+//        println!("Aborting...");
+//        let mut state = shared_state.lock().unwrap();
+//        state.set_action(Action::Aborted);
+//    }
 
-    // abort
-    {
-        let mut state = shared_state.lock().unwrap();
-        state.set_action(Action::Aborted);
-    }
+//    fn process_request(req: &mut Request) -> IronResult<Response> {
+//    }
 
-    // wait for thread to terminate so that the video file is closed correctly
-    println!("Waiting for threads to terminate...");
-    avc_thread.join().unwrap();
-    println!("Finished");
+    Iron::new(move |req: &mut Request| {
+
+        println!("URL: {}", req.url);
+
+        match req.get_ref::<UrlEncodedQuery>() {
+            Ok(ref hashmap) => {
+                match hashmap.get("action") {
+                    Some(ref a) => {
+                        match a[0].as_ref() {
+                            "start" => {
+                                Ok(Response::with((status::Ok, "Started!")))
+                            },
+                            "stop" => {
+                                let mut state = shared_state.lock().unwrap();
+                                state.set_action(Action::Aborted);
+                                Ok(Response::with((status::Ok, "Stopped!")))
+                            },
+                            _ => Ok(Response::with((status::Ok, "Huh?")))
+                        }
+                    },
+                    None => Ok(Response::with((status::Ok, "Missing action")))
+                }
+
+            },
+            Err(ref e) => {
+                println!("{:?}", e);
+                Ok(Response::with((status::Ok, "Hello World!")))
+            }
+        }
+
+    }).http("0.0.0.0:8080").unwrap();
+
+    //
+//    thread::sleep(Duration::from_millis(10000));
+//
+//
+//    // wait for thread to terminate so that the video file is closed correctly
+//    println!("Waiting for threads to terminate...");
+//    avc_thread.join().unwrap();
+//    println!("Finished");
+
+}
+
+/// web server to interact with the code e.g. start / stop navigation
+struct Server {
+    shared_state: Arc<Mutex<Box<State>>>
+}
+
+impl Server {
+
+
 
 }
 
