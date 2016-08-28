@@ -93,6 +93,29 @@ struct IO<'a> {
     video: &'a Video
 }
 
+struct AVC {
+    settings: Settings,
+    shared_state: Arc<Mutex<Box<State>>>
+}
+
+impl AVC {
+
+    fn new() -> Self {
+        AVC {
+            settings: Settings::new(),
+            shared_state: Arc::new(Mutex::new(Box::new(State::new())))
+        }
+    }
+
+    fn start() {
+
+    }
+
+    fn stop() {
+
+    }
+
+}
 
 
 fn close_enough(a: &Location, b: &Location) -> bool {
@@ -260,9 +283,10 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
     });
 
 }
+
 pub fn avc(conf: &Config, enable_motors: bool) {
 
-    let settings = Settings::new();
+    let avc = AVC::new();
 
     //TODO: load waypoints from file
     let waypoints: Vec<Location> = vec![
@@ -286,10 +310,10 @@ pub fn avc(conf: &Config, enable_motors: bool) {
     // sharing state with a Mutex rather than using channels due to the producer and consumer
     // operating at such different rates and the producer only needing the latest state 24
     // times per second
-    let shared_state = Arc::new(Mutex::new(Box::new(State::new())));
+//    let shared_state = Arc::new(Mutex::new(Box::new(State::new())));
 
     // start the thread to write the video
-    let video_state = shared_state.clone();
+    let video_state = avc.shared_state.clone();
     let video_thread = thread::spawn(move || {
         let video = Video::new(0);
         let start = UTC::now().timestamp();
@@ -330,10 +354,10 @@ pub fn avc(conf: &Config, enable_motors: bool) {
     //TODO: wait for start button
 
     let mut state = State::new();
-    let nav_state = shared_state.clone();
+    let nav_state = avc.shared_state.clone();
     for (i, waypoint) in waypoints.iter().enumerate() {
         println!("Heading for waypoint {} at {:?}", i+1, waypoint);
-        navigate_to_waypoint(i+1, &waypoint, &mut io, &mut state, &nav_state, &settings);
+        navigate_to_waypoint(i+1, &waypoint, &mut io, &mut state, &nav_state, &avc.settings);
     }
 
     match io.qik {
