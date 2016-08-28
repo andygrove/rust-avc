@@ -52,8 +52,7 @@ pub enum Action {
 pub struct State {
     loc: Option<(f64,f64)>,
     bearing: Option<f32>,
-    next_wp: Option<usize>,
-    wp_bearing: Option<f32>,
+    waypoint: Option<(usize, f32)>, // waypoint number and bearing
     turn: Option<f32>,
     action: Option<Action>,
     speed: (i8,i8),
@@ -63,11 +62,15 @@ pub struct State {
 impl State {
 
     fn new() -> Self {
-        State { loc: None, bearing: None,
-            next_wp: None, wp_bearing: None,
+        State {
+            loc: None,
+            bearing: None,
+            waypoint: None,
             turn: None,
-            action: None, speed: (0,0),
-            finished: false }
+            action: None,
+            speed: (0,0),
+            finished: false
+        }
     }
 
     fn set_action(&mut self, a: Action) {
@@ -169,14 +172,9 @@ fn navigate_to_waypoint(wp_num: usize, wp: &Location, io: &mut IO,
                         }
                     },
                     Some(b) => {
-                        state.bearing = Some(b);
                         state.set_action(Action::Navigating { waypoint: wp_num });
                         let wp_bearing = loc.calc_bearing_to(&wp) as f32;
-                        state.next_wp = Some(wp_num);
-                        state.wp_bearing = Some(wp_bearing);
                         let turn = calc_bearing_diff(b, wp_bearing);
-                        state.turn = Some(turn);
-
                         let mut left_speed = settings.max_speed;
                         let mut right_speed = settings.max_speed;
 
@@ -188,7 +186,11 @@ fn navigate_to_waypoint(wp_num: usize, wp: &Location, io: &mut IO,
                             right_speed = calculate_motor_speed(&settings, turn.abs());
                         };
 
+                        state.bearing = Some(b);
+                        state.waypoint = Some((wp_num, wp_bearing));
+                        state.turn = Some(turn);
                         state.speed = (left_speed, right_speed);
+
                         match io.qik {
                             None => {},
                             Some(ref mut q) => {
@@ -229,25 +231,18 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
     // compass
     video.draw_text(30, y, match s.bearing {
         None => format!("Compass: N/A"),
-        Some(b) => format!("Compass: {:.*} °", 1, b)
+        Some(b) => format!("Compass: {:.*}", 1, b)
     });
     y += line_height;
 
     // next waypoint number
-    video.draw_text(30, y, match s.next_wp {
-        None => format!("Next WP: N/A"),
-        Some(wp) => format!("Next WP: {}", wp)
+    video.draw_text(30, y, match s.waypoint {
+        None => format!("Waypoint: N/A"),
+        Some((n,b)) => format!("Waypoint: {} @ {:.*}", n, 1, b)
     });
     y += line_height;
 
-    // bearing for next waypoint
-    video.draw_text(30, y, match s.wp_bearing {
-        None => format!("WP Bearing: N/A"),
-        Some(b) => format!("WP Bearing: {:.*} °", 1, b)
-    });
-    y += line_height;
-
-    // bearing for next waypoint
+    // how much do we need to turn?
     video.draw_text(30, y, match s.turn {
         None => format!("Turn: N/A"),
         Some(b) => format!("Turn: {:.*}", 1, b)
@@ -315,8 +310,7 @@ pub fn avc(conf: &Config, enable_motors: bool) {
 
             {
                 let s = video_state.lock().unwrap();
-                println!("Frame {}: GPS={:?}, Compass={:?}, Next WP={:?}, WP_Bearing={:?}, Turn={:?}",
-                         frame, s.loc, s.bearing, s.next_wp, s.wp_bearing, s.turn );
+                println!("{:?}", *s);
 
                 if s.finished {
                     break;
