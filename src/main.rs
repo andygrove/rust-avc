@@ -66,13 +66,13 @@ fn main() {
     else if matches.opt_present("i") { test_imu(&conf); }
     else if matches.opt_present("m") { test_motors(&conf); }
     else if matches.opt_present("u") { panic!("not implemented"); }
-    else if matches.opt_present("t") { run_avc(&conf); }
+    else if matches.opt_present("t") { run_avc(conf); }
     else if matches.opt_present("a") { start_server(); }
     else { panic!("missing cmd line argument .. try --help"); }
 
 }
 
-fn run_avc(conf: &Config) {
+fn run_avc(conf: Config) {
 
     //TODO: load waypoints from file
     let waypoints: Vec<Location> = vec![
@@ -89,8 +89,24 @@ fn run_avc(conf: &Config) {
         waypoints: waypoints
     };
 
-    let avc = AVC::new(&conf, &settings);
-    avc.run();
+    let avc = AVC::new(conf, settings);
+
+    let shared_state = avc.get_shared_state();
+
+    let avc_thread = thread::spawn(move || {
+        avc.run();
+    });
+
+    thread::sleep(Duration::from_millis(10000));
+
+    // abort
+    {
+        let mut state = shared_state.lock().unwrap();
+        state.set_action(Action::Aborted);
+    }
+
+    // wait for thread to terminate so that the video file is closed correctly
+    avc_thread.join().unwrap();
 
 }
 

@@ -36,7 +36,8 @@ pub enum Action {
     AvoidingObstacleToLeft,
     AvoidingObstacleToRight,
     EmergencyStop,
-    Finished
+    Finished,
+    Aborted
 }
 
 /// instrumentation data to display on the video stream
@@ -65,7 +66,7 @@ impl State {
         }
     }
 
-    fn set_action(&mut self, a: Action) {
+    pub fn set_action(&mut self, a: Action) {
         match self.action {
             None => println!("Action: {:?}", a),
             Some(ref b) => if &a != b {
@@ -85,15 +86,15 @@ struct IO<'a> {
     video: &'a Video
 }
 
-pub struct AVC<'a> {
-    conf: &'a Config,
-    settings: &'a Settings,
+pub struct AVC {
+    conf: Config,
+    settings: Settings,
     shared_state: Arc<Mutex<Box<State>>>
 }
 
-impl<'a> AVC<'a> {
+impl AVC {
 
-    pub fn new(conf: &'a Config, settings: &'a Settings) -> Self {
+    pub fn new(conf: Config, settings: Settings) -> Self {
         AVC {
             conf: conf,
             settings: settings,
@@ -101,12 +102,8 @@ impl<'a> AVC<'a> {
         }
     }
 
-    pub fn start(&self) {
-
-    }
-
-    pub fn stop(&self) {
-
+    pub fn get_shared_state(&self) -> Arc<Mutex<Box<State>>> {
+        self.shared_state.clone()
     }
 
     pub fn run(&self) {
