@@ -3,9 +3,10 @@ extern crate iron;
 use self::iron::prelude::*;
 use self::iron::status;
 
-fn main() {
+pub fn start_server() {
 
-    fn hello_world(_: &mut Request) -> IronResult<Response> {
+    fn hello_world(req: &mut Request) -> IronResult<Response> {
+        println!("URL: {}", req.url);
         Ok(Response::with((status::Ok, "Hello World!")))
     }
 

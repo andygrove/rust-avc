@@ -48,7 +48,7 @@ fn main() {
     opts.optflag("m", "test-motors", "tests the motors");
     opts.optflag("u", "test-ultrasonic", "tests the ultrasonic sensors");
     opts.optflag("t", "test-avc", "tests the full avc logic, but without motors running");
-    opts.optflag("a", "avc", "navigate a course, for real!");
+    opts.optflag("a", "avc", "Start the web server");
 
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => { m }
@@ -67,7 +67,7 @@ fn main() {
     else if matches.opt_present("m") { test_motors(&conf); }
     else if matches.opt_present("u") { panic!("not implemented"); }
     else if matches.opt_present("t") { avc(&conf, false); }
-    else if matches.opt_present("a") { avc(&conf, true); }
+    else if matches.opt_present("a") { start_server(); }
     else { panic!("missing cmd line argument .. try --help"); }
 
 }
