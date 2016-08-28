@@ -205,6 +205,9 @@ pub fn avc(conf: &Config, enable_motors: bool) {
             {
                 let s = video_state.lock().unwrap();
 
+                println!("Frame {}: GPS={:?}, Compass={:?}, Next WP={:?}, WP_Bearing={:?}",
+                         i, s.loc, s.bearing, s.next_wp, s.wp_bearing );
+
                 if s.finished {
                     break;
                 }

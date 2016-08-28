@@ -67,7 +67,7 @@ impl Compass {
                         let sentence = String::from(&buf[..]);
                         match sentence.parse::<f64>() {
                             Ok(n) => {
-                                println!("bearing: {}", n);
+                                //println!("bearing: {}", n);
                                 compass_bearing.lock().unwrap().set(n);
                             },
                             Err(e) => println!("Failed to parse bearing '{}'", sentence)
