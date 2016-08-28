@@ -195,17 +195,18 @@ impl AVC {
     ) -> bool {
         loop {
 
-            match state.action {
-                Some(Action::Finished) | Some(Action::Aborted) => {
-                    println!("Aborting navigation to waypoint {}", wp_num);
-                    return false;
-                },
-                _ => {}
-            };
-
             // replace the shared state ... using a block here to limit the scope of the mutex
             {
                 let mut x = nav_state.lock().unwrap();
+
+                match x.action {
+                    Some(Action::Finished) | Some(Action::Aborted) => {
+                        println!("Aborting navigation to waypoint {}", wp_num);
+                        return false;
+                    },
+                    _ => {}
+                };
+
                 *x = Box::new(state.clone());
             }
 
