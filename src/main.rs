@@ -19,11 +19,13 @@ mod gps;
 mod compass;
 mod video;
 mod avc;
+mod server;
 
 use gps::GPS;
 use compass::Compass;
 use video::Video;
 use avc::*;
+use server::*;
 
 pub struct Config {
     gps_device: &'static str,

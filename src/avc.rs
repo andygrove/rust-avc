@@ -293,7 +293,9 @@ pub fn avc(conf: &Config, enable_motors: bool) {
     let video_thread = thread::spawn(move || {
         let video = Video::new(0);
         let start = UTC::now().timestamp();
-        video.init(format!("avc-{}.mp4", start)).unwrap();
+        let filename = format!("avc-{}.mp4", start);
+        println!("Writing video to {}", filename);
+        video.init(filename).unwrap();
         let mut frame = 0;
         loop {
             frame += 1;
@@ -320,6 +322,8 @@ pub fn avc(conf: &Config, enable_motors: bool) {
 
             video.write();
         }
+
+        println!("Closing video file");
         video.close();
     });
 
@@ -345,3 +349,5 @@ pub fn avc(conf: &Config, enable_motors: bool) {
 
     println!("Finished");
 }
+
+
