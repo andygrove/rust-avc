@@ -150,8 +150,10 @@ impl AVC {
 
                     // stop capturing video at end of race
                     match s.action {
-                        Some(Action::Finished) => break,
-                        Some(Action::Aborted) => break,
+                        Some(Action::Finished) | Some(Action::Aborted) => {
+                            println!("Aborting video writer thread");
+                            break;
+                        },
                         _ => {}
                     };
 
@@ -165,13 +167,12 @@ impl AVC {
             video.close();
         });
 
-        //TODO: wait for start button
-
         let mut state = State::new();
         let nav_state = self.shared_state.clone();
         for (i, waypoint) in self.settings.waypoints.iter().enumerate() {
-            println!("Heading for waypoint {} at {:?}", i+1, waypoint);
-            self.navigate_to_waypoint(i+1, &waypoint, &mut io, &mut state, &nav_state);
+            if !self.navigate_to_waypoint(i+1, &waypoint, &mut io, &mut state, &nav_state) {
+                break;
+            }
         }
 
         match io.qik {
@@ -183,16 +184,24 @@ impl AVC {
         }
 
         // wait for video writer to finish
+        println!("nav thread waiting for video thread to terminate");
         video_thread.join().unwrap();
-
-        println!("Finished");
+        println!("nav thread finished waiting for video thread to terminate");
     }
 
     fn navigate_to_waypoint(&self, wp_num: usize, wp: &Location, io: &mut IO,
                             state: &mut State,
                             nav_state: &Arc<Mutex<Box<State>>>
-    ) {
+    ) -> bool {
         loop {
+
+            match state.action {
+                Some(Action::Finished) | Some(Action::Aborted) => {
+                    println!("Aborting navigation to waypoint {}", wp_num);
+                    return false;
+                },
+                _ => {}
+            };
 
             // replace the shared state ... using a block here to limit the scope of the mutex
             {
@@ -217,7 +226,7 @@ impl AVC {
                     state.loc = Some((loc.lat, loc.lon));
                     if close_enough(&loc, &wp) {
                         state.set_action(Action::ReachedWaypoint { waypoint: wp_num });
-                        break;
+                        return true;
                     }
 
                     match io.imu.get() {
