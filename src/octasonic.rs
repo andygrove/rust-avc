@@ -21,9 +21,7 @@ impl Octasonic {
 
         spi.configure(&options).unwrap();
 
-        let os = Octasonic { spi: spi, options: options };
-//	os.spi.configure(&os.options).unwrap();
-	os
+        Octasonic { spi: spi, options: options }
     }
 
     fn set_sensor_count(&self, n: u8) {
@@ -49,7 +47,7 @@ impl Octasonic {
         self.spi.transfer(&mut transfer).unwrap();
         println!("{:?}", transfer.rx_buf);
         let b = transfer.rx_buf.unwrap();
-0
+        (*b)[0]
     }
 
 }
