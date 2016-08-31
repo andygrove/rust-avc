@@ -28,11 +28,13 @@ mod gps;
 mod compass;
 mod video;
 mod avc;
+mod octasonic;
 
 use gps::GPS;
 use compass::Compass;
 use video::Video;
 use avc::*;
+use octasonic::*;
 
 pub struct Config {
     gps_device: &'static str,
