@@ -1,6 +1,24 @@
-struct Octasonic {}
+extern crate spidev;
+use std::io;
+use std::io::prelude::*;
+use spidev::{Spidev, SpidevOptions, SpidevTransfer, SPI_MODE_0};
+
+struct Octasonic {
+    spi: Spidev
+}
 
 impl Octasonic {
+
+    fn new() -> Self {
+        let mut spi = try!(Spidev::open("/dev/spidev0.0"));
+        let mut options = SpidevOptions::new()
+            .bits_per_word(8)
+            .max_speed_hz(20_000)
+            .mode(SPI_MODE_0);
+        try!(spi.configure(&options));
+
+        Octasonic { spi: spi }
+    }
 
     fn set_sensor_count(&self, n: u8) {
         assert!(n>0 && n<9);
@@ -21,8 +39,10 @@ impl Octasonic {
     }
 
     fn transfer(&self, b: u8) -> u8 {
-        //TODO: SPI transfer
-        0
+        let mut transfer = SpidevTransfer::write(&[b]);
+        try!(spi.transfer(&mut transfer));
+        println!("{:?}", transfer.rx_buf);
+        transfer.rx_buf[0]
     }
 
 }
