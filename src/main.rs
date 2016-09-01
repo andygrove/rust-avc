@@ -74,7 +74,7 @@ fn main() {
     else if matches.opt_present("v") { test_video(&conf); }
     else if matches.opt_present("i") { test_imu(&conf); }
     else if matches.opt_present("m") { test_motors(&conf); }
-    else if matches.opt_present("u") { panic!("not implemented"); }
+    else if matches.opt_present("u") { test_octasonic(); }
     else if matches.opt_present("t") { run_avc(conf); }
     else if matches.opt_present("a") { run_avc(conf); }
     else { panic!("missing cmd line argument .. try --help"); }
@@ -284,3 +284,19 @@ fn test_video(conf: &Config) {
     video.close();
 }
 
+fn test_octasonic() {
+  let o = Octasonic::new();
+  let n = 1; // sensor count
+  o.set_sensor_count(n);
+  let m = o.get_sensor_count();
+  if n != m {
+    println!("Warning: failed to set sensor count!");
+  }
+
+  loop {
+    for i in 0..m {
+      println!("Ultrasonic {}: {} cm", i, o.get_sensor_reading(i));
+    }
+    thread::sleep(Duration::from_millis(1000));
+  }
+}
