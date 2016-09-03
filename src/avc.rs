@@ -232,20 +232,20 @@ impl AVC {
             let fr = state.usonic[2];
 
             let avoid = if fl < 50 {
-                    Some(Action::AvoidingObstacleToLeft)
-                } else if fr < 50 {
-                    Some(Action::AvoidingObstacleToRight)
-                } else if ff < 50 {
-                    if fl < 50 && fr < 50 {
-                        Some(Action::EmergencyStop)
-                    } else if (fl < fr) {
-                        Some(Action::AvoidingObstacleToLeft)
-                    } else {
-                        Some(Action::AvoidingObstacleToRight)
-                    }
-                } else {
-
-            };
+                            Some(Action::AvoidingObstacleToLeft)
+                        } else if fr < 50 {
+                            Some(Action::AvoidingObstacleToRight)
+                        } else if ff < 50 {
+                            if fl < 50 && fr < 50 {
+                                Some(Action::EmergencyStop)
+                            } else if (fl < fr) {
+                                Some(Action::AvoidingObstacleToLeft)
+                            } else {
+                                Some(Action::AvoidingObstacleToRight)
+                            }
+                        } else {
+                            None
+                        };
 
             match avoid {
                 Some(a) => {
