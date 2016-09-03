@@ -121,13 +121,13 @@ fn run_avc(conf: Config) {
     let start_state = avc.get_shared_state();
     let web_state = avc.get_shared_state();
 
-    let avc_thread = thread::spawn(move || {
+    let _ = thread::spawn(move || {
 
         // wait for the user to hit the start button
         println!("Waiting for start command");
         loop {
             {
-                let mut state = start_state.lock().unwrap();
+                let state = start_state.lock().unwrap();
                 match &state.action {
                     &   Action::WaitingForStartCommand => {},
                     _ => break
@@ -241,6 +241,7 @@ fn run_avc(conf: Config) {
 
             },
             Err(ref e) => {
+                println!("Error: {:?}", e);
                 let mut r = Response::with((status::Ok, start_page));
                 r.headers.set(ContentType(Mime(TopLevel::Text, SubLevel::Html, vec![])));
                 Ok(r)

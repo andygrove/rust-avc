@@ -370,7 +370,7 @@ fn calculate_motor_speed(settings: &Settings, angle: f32) -> i8 {
 fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, frame: i64) {
 
     let mut y = 30;
-    let mut line_height = 25;
+    let line_height = 25;
 
     // FPS
     if elapsed > 0 {

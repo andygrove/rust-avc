@@ -37,7 +37,6 @@ impl Octasonic {
     }
 
     pub fn get_sensor_reading(&self, n: u8) -> u8 {
-        assert!(n>=0 && n<8);
         let _ = self.transfer(0x30 | n);
         self.transfer(0x00)
     }
