@@ -77,7 +77,7 @@ fn main() {
     else if matches.opt_present("v") { test_video(&conf); }
     else if matches.opt_present("i") { test_imu(&conf); }
     else if matches.opt_present("m") { test_motors(&conf); }
-    else if matches.opt_present("u") { test_octasonic(); }
+    else if matches.opt_present("u") { test_ultrasonic(&conf); }
     else if matches.opt_present("a") { run_avc(conf); }
     else { panic!("missing cmd line argument .. try --help"); }
 
@@ -336,7 +336,7 @@ fn test_video(conf: &Config) {
     video.close();
 }
 
-fn test_octasonic() {
+fn test_ultrasonic(conf: &Config) {
     let o = Octasonic::new();
     let n = 3; // sensor count
     o.set_sensor_count(n);
