@@ -184,7 +184,9 @@ fn run_avc(conf: Config) {
                             <form action=\"/\">\
                             <input type=\"hidden\" name=\"action\" value=\"stop\">\
                             <input type=\"submit\" value=\"Stop!\" class=\"stop_button\">\
-                            </form></body></html>", css);
+                            </form>
+                            <a href=\"/\">HOME</a>\
+                            </body></html>", css);
 
         let restart_page = format!("<html>
                             <head><style>{}</style></head><body>\
@@ -197,6 +199,7 @@ fn run_avc(conf: Config) {
         let invalid_action = format!("<html>
                             <head><style>{}</style></head><body>\
                             <h1>Invalid action!</h1>\
+                            <a href=\"/\">HOME</a>\
                             </body></html>", css);
 
         match req.get_ref::<UrlEncodedQuery>() {
