@@ -3,3 +3,4 @@ export DISPLAY=0.0
 export LD_LIBRARY_PATH=/usr/local/lib
 cd ~/rust-avc
 ./target/release/avc --avc
+sleep 10
