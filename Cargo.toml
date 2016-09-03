@@ -16,3 +16,6 @@ qik = "1.0.1"
 iron = "*"
 urlencoded = "*"
 hyper = "*"
+
+[dependencies.yaml-rust]
+git = "https://github.com/chyh1990/yaml-rust.git"

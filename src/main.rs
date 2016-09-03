@@ -5,6 +5,7 @@ extern crate getopts;
 extern crate chrono;
 extern crate navigation;
 extern crate qik;
+extern crate yaml_rust;
 
 use getopts::Options;
 use chrono::UTC;
@@ -15,9 +16,12 @@ use iron::status;
 use urlencoded::UrlEncodedQuery;
 use hyper::header::{Headers, ContentType};
 use hyper::mime::{Mime, TopLevel, SubLevel};
+use yaml_rust::{YamlLoader, YamlEmitter, Yaml};
 
 use std::collections::HashMap;
 use std::env;
+use std::fs::File;
+use std::io::Read;
 use std::sync::mpsc::{Sender, Receiver};
 use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
@@ -102,7 +106,7 @@ fn run_avc(conf: Config) {
 
     let settings = Settings {
         enable_motors: doc.get(&Yaml::String(String::from("enable_motors"))).unwrap().as_bool().unwrap(),
-        max_speed: doc.get(&Yaml::String(String::from("max_speed"))).unwrap().as_i64().unwrap(),
+        max_speed: doc.get(&Yaml::String(String::from("max_speed"))).unwrap().as_i64().unwrap() as i8,
         differential_drive_coefficient: 1_f32,
         waypoints: course
     };
