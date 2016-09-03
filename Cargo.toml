@@ -13,9 +13,7 @@ rand = "0.3.13"
 libc = "0.2.0"
 chrono = "0.2.25"
 qik = "1.0.1"
-iron = "*"
-urlencoded = "*"
-hyper = "*"
-
-[dependencies.yaml-rust]
-git = "https://github.com/chyh1990/yaml-rust.git"
+iron = "0.4.0"
+urlencoded = "0.4.1"
+hyper = "0.9.10"
+yaml-rust = "0.3.3"

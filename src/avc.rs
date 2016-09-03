@@ -227,18 +227,20 @@ impl AVC {
                 state.usonic[i] = o.get_sensor_reading(i as u8);
             }
 
-            let fl = state.usonic[0];
+            let fl = state.usonic[2];
             let ff = state.usonic[1];
-            let fr = state.usonic[2];
+            let fr = state.usonic[0];
 
-            let avoid = if fl < 50 {
+let x = 20;
+
+            let avoid = if fl < x {
                             Some(Action::AvoidingObstacleToLeft)
-                        } else if fr < 50 {
+                        } else if fr < x {
                             Some(Action::AvoidingObstacleToRight)
                         } else if ff < 50 {
-                            if fl < 50 && fr < 50 {
+                            if fl < x && fr < x {
                                 Some(Action::EmergencyStop)
-                            } else if (fl < fr) {
+                            } else if fl < fr {
                                 Some(Action::AvoidingObstacleToLeft)
                             } else {
                                 Some(Action::AvoidingObstacleToRight)
@@ -249,12 +251,13 @@ impl AVC {
 
             match avoid {
                 Some(a) => {
-                    state.action = a;
                     state.speed = match a {
                         Action::AvoidingObstacleToLeft => (self.settings.max_speed, 0),
                         Action::AvoidingObstacleToRight => (0, self.settings.max_speed),
                         Action::EmergencyStop => (0, 0),
+                        _ => panic!("Unsupported avoidance action: {:?}", a)
                     };
+                    state.action = a;
                     match io.qik {
                         None => {},
                         Some(ref mut q) => {
@@ -263,7 +266,7 @@ impl AVC {
                         }
                     }
                     continue
-                }
+                },
                 None => {}
             }
 

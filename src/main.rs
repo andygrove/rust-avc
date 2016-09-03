@@ -84,13 +84,12 @@ fn main() {
 }
 
 fn run_avc(conf: Config) {
-
     //TODO: make cmd-line argument
     let filename = "./conf/basketball_court.yaml";
 
     let mut input = String::new();
     let mut file = File::open(filename).unwrap();
-    file.read_to_string(&mut input);
+    file.read_to_string(&mut input).unwrap();
     let docs = YamlLoader::load_from_str(&input).unwrap();
     let doc = &docs[0].as_hash().unwrap();
 
@@ -105,12 +104,18 @@ fn run_avc(conf: Config) {
     }
 
     let settings = Settings {
-        enable_motors: doc.get(&Yaml::String(String::from("enable_motors"))).unwrap().as_bool().unwrap(),
+        enable_motors: true, //doc.get(&Yaml::String(String::from("enable_motors"))).unwrap().as_bool().unwrap(),
         max_speed: doc.get(&Yaml::String(String::from("max_speed"))).unwrap().as_i64().unwrap() as i8,
         differential_drive_coefficient: 1_f32,
         waypoints: course
     };
 
+/*let settings = Settings { enable_motors: true, max_speed: 127, differential_drive_coefficient: 1_f32, waypoints: vec![
+  Location::new(39.94177796143009, -105.08160397410393),
+  Location::new(39.94190648894769, -105.08158653974533),
+  Location::new(39.94186741660787, -105.08174613118172),
+]);
+*/
     let avc = AVC::new(conf, settings);
 
     let start_state = avc.get_shared_state();
@@ -306,7 +311,7 @@ fn test_video(conf: &Config) {
         }
 
         let mut y = 30;
-        let mut line_height = 40;
+        let line_height = 40;
 
         video.capture();
         if elapsed > 0 {
@@ -326,7 +331,6 @@ fn test_video(conf: &Config) {
             None => format!("Compass: N/A"),
             Some(b) => format!("Compass: {:.*}", 1, b)
         });
-        y += line_height;
 
         video.write();
     }
