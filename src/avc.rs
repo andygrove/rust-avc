@@ -2,7 +2,6 @@ extern crate chrono;
 extern crate navigation;
 
 use super::video::*;
-use super::qik::*;
 use super::compass::*;
 use super::gps::*;
 use super::octasonic::*;
@@ -10,8 +9,8 @@ use super::Config;
 
 use chrono::UTC;
 use chrono::DateTime;
+use qik::*;
 use navigation::*;
-use octasonic::*;
 
 use std::sync::mpsc::{Sender, Receiver};
 use std::sync::mpsc;
@@ -176,7 +175,6 @@ impl AVC {
             panic!("Warning: failed to set sensor count! {} != {}", m, n);
         }
 
-
         let mut state = State::new();
         let nav_state = self.shared_state.clone();
         for (i, waypoint) in self.settings.waypoints.iter().enumerate() {
@@ -226,19 +224,19 @@ impl AVC {
 
             // check for obstacles
             for i in 0 .. 3 {
-                state.usonic[i] = o.get_sensor_reading(i);
+                state.usonic[i] = o.get_sensor_reading(i as u8);
             }
 
             let fl = state.usonic[0];
             let ff = state.usonic[1];
             let fr = state.usonic[2];
 
-            let avoid = if (fl < 50) {
+            let avoid = if fl < 50 {
                     Some(Action::AvoidingObstacleToLeft)
-                } else if (fr < 50) {
+                } else if fr < 50 {
                     Some(Action::AvoidingObstacleToRight)
-                } else if (ff < 50) {
-                    if (fl < 50 && fr < 50) {
+                } else if ff < 50 {
+                    if fl < 50 && fr < 50 {
                         Some(Action::EmergencyStop)
                     } else if (fl < fr) {
                         Some(Action::AvoidingObstacleToLeft)
