@@ -145,6 +145,42 @@ fn run_avc(conf: Config) {
 //            ContentType(Mime(TopLevel::Text, SubLevel::Html, vec![]))
 //        );
 
+        let css = ".start_button {\
+                    background-color: green;\
+                    border: none;\
+                    color: white;\
+                    padding: 15px 32px;\
+                    text-align: center;\
+                    text-decoration: none;\
+                    display: inline-block;\
+                    font-size: 48px;\
+                }\
+                \
+                .stop_button {\
+                    background-color: red;\
+                    border: none;\
+                    color: white;\
+                    padding: 15px 32px;\
+                    text-align: center;\
+                    text-decoration: none;\
+                    display: inline-block;\
+                    font-size: 48px;\
+                }";
+
+        let start_page = format!("<html>
+                            <head><style>{}</style></head><body>
+                            <form action=\"/\">\
+                            <input type=\"hidden\" name=\"action\" value=\"start\">\
+                            <input type=\"submit\" value=\"Start!\" class=\"start_button\">\
+                            </form></body></html>", css);
+
+        let stop_page = format!("<html>
+                            <head><style>{}</style></head><body>
+                            <form action=\"/\">\
+                            <input type=\"hidden\" name=\"action\" value=\"stop\">\
+                            <input type=\"submit\" value=\"Stop!\" class=\"stop_button\">\
+                            </form></body></html>", css);
+
         match req.get_ref::<UrlEncodedQuery>() {
             Ok(ref hashmap) => {
                 match hashmap.get("action") {
@@ -155,11 +191,7 @@ fn run_avc(conf: Config) {
                                     let mut state = web_state.lock().unwrap();
                                     state.set_action(Action::Navigating { waypoint: 1 });
                                 }
-                                let mut r = Response::with((status::Ok,
-                                                            "<html><body><form action=\"/\">\
-                                                            <input type=\"hidden\" name=\"action\" value=\"stop\">\
-                                                            <input type=\"submit\" value=\"Stop!\">\
-                                                            </form></body></html>"));
+                                let mut r = Response::with((status::Ok, stop_page));
                                 r.headers.set(ContentType(Mime(TopLevel::Text, SubLevel::Html, vec![])));
                                 Ok(r)
                             },
@@ -180,11 +212,7 @@ fn run_avc(conf: Config) {
                         }
                     },
                     None => {
-                        let mut r = Response::with((status::Ok,
-                            "<html><body><form action=\"/\">\
-                            <input type=\"hidden\" name=\"action\" value=\"start\">\
-                            <input type=\"submit\" value=\"Start!\">\
-                            </form></body></html>"));
+                        let mut r = Response::with((status::Ok, start_page));
                         r.headers.set(ContentType(Mime(TopLevel::Text, SubLevel::Html, vec![])));
                         Ok(r)
                     }
@@ -192,11 +220,7 @@ fn run_avc(conf: Config) {
 
             },
             Err(ref e) => {
-                let mut r = Response::with((status::Ok,
-                                            "<html><body><form action=\"/\">\
-                                            <input type=\"hidden\" name=\"action\" value=\"start\">\
-                                            <input type=\"submit\" value=\"Start!\">\
-                                            </form></body></html>"));
+                let mut r = Response::with((status::Ok, start_page));
                 r.headers.set(ContentType(Mime(TopLevel::Text, SubLevel::Html, vec![])));
                 Ok(r)
             }
