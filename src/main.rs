@@ -56,7 +56,6 @@ fn main() {
     opts.optflag("i", "test-imu", "tests the IMU");
     opts.optflag("m", "test-motors", "tests the motors");
     opts.optflag("u", "test-ultrasonic", "tests the ultrasonic sensors");
-    opts.optflag("t", "test-avc", "tests the full avc logic, but without motors running");
     opts.optflag("a", "avc", "Start the web server");
 
     let matches = match opts.parse(&args[1..]) {
@@ -75,7 +74,6 @@ fn main() {
     else if matches.opt_present("i") { test_imu(&conf); }
     else if matches.opt_present("m") { test_motors(&conf); }
     else if matches.opt_present("u") { test_octasonic(); }
-    else if matches.opt_present("t") { run_avc(conf); }
     else if matches.opt_present("a") { run_avc(conf); }
     else { panic!("missing cmd line argument .. try --help"); }
 
@@ -83,19 +81,30 @@ fn main() {
 
 fn run_avc(conf: Config) {
 
-    //TODO: load waypoints from file
-    let waypoints: Vec<Location> = vec![
-        Location::new(39.94177796143009, -105.08160397410393),
-        Location::new(39.94190648894769, -105.08158653974533),
-        Location::new(39.94186741660787, -105.08174613118172),
-    ];
+    //TODO: make cmd-line argument
+    let filename = "./conf/basketball_court.yaml";
 
-    //TODO: load settings from file
+    let mut input = String::new();
+    let mut file = File::open(filename).unwrap();
+    file.read_to_string(&mut input);
+    let docs = YamlLoader::load_from_str(&input).unwrap();
+    let doc = &docs[0].as_hash().unwrap();
+
+    let waypoints = doc.get(&Yaml::String(String::from("waypoints"))).unwrap().as_vec().unwrap();
+    let mut course : Vec<Location> = vec![];
+    for i in 0 .. waypoints.len() {
+        let wp = &waypoints[i].as_vec().unwrap();
+        let lat = wp[0].as_f64().unwrap();
+        let lon = wp[1].as_f64().unwrap();
+        println!("wp {} = {:?}, {:?}", i, lat, lon);
+        course.push(Location::new(lat, lon));
+    }
+
     let settings = Settings {
-        max_speed: 127,
-        differential_drive_coefficient: 5_f32,
-        enable_motors: false,
-        waypoints: waypoints
+        enable_motors: doc.get(&Yaml::String(String::from("enable_motors"))).unwrap().as_bool().unwrap(),
+        max_speed: doc.get(&Yaml::String(String::from("max_speed"))).unwrap().as_i64().unwrap(),
+        differential_drive_coefficient: 1_f32,
+        waypoints: course
     };
 
     let avc = AVC::new(conf, settings);
