@@ -286,17 +286,19 @@ fn test_video(conf: &Config) {
 
 fn test_octasonic() {
   let o = Octasonic::new();
-  let n = 1; // sensor count
+  let n = 3; // sensor count
   o.set_sensor_count(n);
   let m = o.get_sensor_count();
   if n != m {
-    println!("Warning: failed to set sensor count!");
+    panic!("Warning: failed to set sensor count! {} != {}", m, n);
   }
 
   loop {
-    for i in 0..m {
-      println!("Ultrasonic {}: {} cm", i, o.get_sensor_reading(i));
+    print!("Ultrasonic: ");
+    for i in 0..n {
+      print!("{}  ", o.get_sensor_reading(i));
     }
+    println!(" cm");
     thread::sleep(Duration::from_millis(1000));
   }
 }
