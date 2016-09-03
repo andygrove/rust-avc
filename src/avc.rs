@@ -5,11 +5,13 @@ use super::video::*;
 use super::qik::*;
 use super::compass::*;
 use super::gps::*;
+use super::octasonic::*;
 use super::Config;
 
 use chrono::UTC;
 use chrono::DateTime;
 use navigation::*;
+use octasonic::*;
 
 use std::sync::mpsc::{Sender, Receiver};
 use std::sync::mpsc;
@@ -33,9 +35,9 @@ pub enum Action {
     ReachedWaypoint { waypoint: usize },
     WaitingForGps,
     WaitingForCompass,
-//    AvoidingObstacleToLeft,
-//    AvoidingObstacleToRight,
-//    EmergencyStop,
+    AvoidingObstacleToLeft,
+    AvoidingObstacleToRight,
+    EmergencyStop,
     Finished,
     Aborted
 }
@@ -49,6 +51,7 @@ pub struct State {
     turn: Option<f32>,
     pub action: Action,
     speed: (i8,i8),
+    usonic: Vec<u8>
 }
 
 impl State {
@@ -61,6 +64,7 @@ impl State {
             turn: None,
             action: Action::WaitingForStartCommand,
             speed: (0,0),
+            usonic: vec![255,255,255]
         }
     }
 
@@ -164,10 +168,19 @@ impl AVC {
             video.close();
         });
 
+        let o = Octasonic::new();
+        let n = 3; // sensor count
+        o.set_sensor_count(n);
+        let m = o.get_sensor_count();
+        if n != m {
+            panic!("Warning: failed to set sensor count! {} != {}", m, n);
+        }
+
+
         let mut state = State::new();
         let nav_state = self.shared_state.clone();
         for (i, waypoint) in self.settings.waypoints.iter().enumerate() {
-            if !self.navigate_to_waypoint(i+1, &waypoint, &mut io, &mut state, &nav_state) {
+            if !self.navigate_to_waypoint(i+1, &waypoint, &mut io, &mut state, &nav_state, &o) {
                 break;
             }
         }
@@ -188,7 +201,8 @@ impl AVC {
 
     fn navigate_to_waypoint(&self, wp_num: usize, wp: &Location, io: &mut IO,
                             state: &mut State,
-                            nav_state: &Arc<Mutex<Box<State>>>
+                            nav_state: &Arc<Mutex<Box<State>>>,
+                            o: &Octasonic
     ) -> bool {
         loop {
 
@@ -205,6 +219,54 @@ impl AVC {
                 };
 
                 *x = Box::new(state.clone());
+            }
+
+            // performing this logic 100 times per second should be enough
+            thread::sleep(Duration::from_millis(10));
+
+            // check for obstacles
+            for i in 0 .. 3 {
+                state.usonic[i] = o.get_sensor_reading(i);
+            }
+
+            let fl = state.usonic[0];
+            let ff = state.usonic[1];
+            let fr = state.usonic[2];
+
+            let avoid = if (fl < 50) {
+                    Some(Action::AvoidingObstacleToLeft)
+                } else if (fr < 50) {
+                    Some(Action::AvoidingObstacleToRight)
+                } else if (ff < 50) {
+                    if (fl < 50 && fr < 50) {
+                        Some(Action::EmergencyStop)
+                    } else if (fl < fr) {
+                        Some(Action::AvoidingObstacleToLeft)
+                    } else {
+                        Some(Action::AvoidingObstacleToRight)
+                    }
+                } else {
+
+            };
+
+            match avoid {
+                Some(a) => {
+                    state.action = a;
+                    state.speed = match a {
+                        Action::AvoidingObstacleToLeft => (self.settings.max_speed, 0),
+                        Action::AvoidingObstacleToRight => (0, self.settings.max_speed),
+                        Action::EmergencyStop => (0, 0),
+                    };
+                    match io.qik {
+                        None => {},
+                        Some(ref mut q) => {
+                            q.set_speed(Motor::M0, state.speed.0);
+                            q.set_speed(Motor::M1, state.speed.1);
+                        }
+                    }
+                    continue
+                }
+                None => {}
             }
 
             match io.gps.get() {
@@ -295,10 +357,6 @@ fn calc_bearing_diff(current_bearing: f32, wp_bearing: f32) -> f32 {
 
 /// Calculate motor speed based on angle of turn.
 fn calculate_motor_speed(settings: &Settings, angle: f32) -> i8 {
-    if angle > 40_f32 {
-        // sharp turn
-        return 0;
-    }
     let mut temp = angle * settings.differential_drive_coefficient;
     if temp > 180_f32 {
         temp = 180_f32;
@@ -353,6 +411,10 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
 
     // motor speeds
     video.draw_text(30, y, format!("Motors: {} / {}", s.speed.0, s.speed.1));
+    y += line_height;
+
+    // ultrasonic sensors
+    video.draw_text(30, y, format!("Ultrasonic: {} {} {}", s.usonic[0], s.usonic[1], s.usonic[2]));
     y += line_height;
 
     // action
