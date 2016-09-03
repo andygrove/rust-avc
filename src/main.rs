@@ -181,6 +181,19 @@ fn run_avc(conf: Config) {
                             <input type=\"submit\" value=\"Stop!\" class=\"stop_button\">\
                             </form></body></html>", css);
 
+        let restart_page = format!("<html>
+                            <head><style>{}</style></head><body>\
+                            <h1>Stopped! You will need to restart the cmd-line app before starting again!</h1>\
+                            <form action=\"/\">\
+                            <input type=\"hidden\" name=\"action\" value=\"start\">\
+                            <input type=\"submit\" value=\"Start!\" class=\"start_button\">\
+                            </form></body></html>", css);
+
+        let invalid_action = format!("<html>
+                            <head><style>{}</style></head><body>\
+                            <h1>Invalid action!</h1>\
+                            </body></html>", css);
+
         match req.get_ref::<UrlEncodedQuery>() {
             Ok(ref hashmap) => {
                 match hashmap.get("action") {
@@ -200,12 +213,12 @@ fn run_avc(conf: Config) {
                                     let mut state = web_state.lock().unwrap();
                                     state.set_action(Action::Aborted);
                                 }
-                                let mut r = Response::with((status::Ok, "Stopped! You'll need to restart the app now"));
+                                let mut r = Response::with((status::Ok, restart_page));
                                 r.headers.set(ContentType(Mime(TopLevel::Text, SubLevel::Html, vec![])));
                                 Ok(r)
                             },
                             _ => {
-                                let mut r = Response::with((status::Ok, "Did not recognize action"));
+                                let mut r = Response::with((status::Ok, invalid_action));
                                 r.headers.set(ContentType(Mime(TopLevel::Text, SubLevel::Html, vec![])));
                                 Ok(r)
                             }
