@@ -231,13 +231,9 @@ impl AVC {
             let ff = state.usonic[1];
             let fr = state.usonic[0];
 
-let x = 20;
+            let x = 20;
 
-            let avoid = if fl < x {
-                            Some(Action::AvoidingObstacleToLeft)
-                        } else if fr < x {
-                            Some(Action::AvoidingObstacleToRight)
-                        } else if ff < 50 {
+            let avoid = if ff < x {
                             if fl < x && fr < x {
                                 Some(Action::EmergencyStop)
                             } else if fl < fr {
@@ -245,6 +241,10 @@ let x = 20;
                             } else {
                                 Some(Action::AvoidingObstacleToRight)
                             }
+                        } else if fl < x {
+                            Some(Action::AvoidingObstacleToLeft)
+                        } else if fr < x {
+                            Some(Action::AvoidingObstacleToRight)
                         } else {
                             None
                         };

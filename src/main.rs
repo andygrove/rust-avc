@@ -110,12 +110,6 @@ fn run_avc(conf: Config) {
         waypoints: course
     };
 
-/*let settings = Settings { enable_motors: true, max_speed: 127, differential_drive_coefficient: 1_f32, waypoints: vec![
-  Location::new(39.94177796143009, -105.08160397410393),
-  Location::new(39.94190648894769, -105.08158653974533),
-  Location::new(39.94186741660787, -105.08174613118172),
-]);
-*/
     let avc = AVC::new(conf, settings);
 
     let start_state = avc.get_shared_state();
@@ -343,20 +337,38 @@ fn test_video(conf: &Config) {
 }
 
 fn test_octasonic() {
-  let o = Octasonic::new();
-  let n = 3; // sensor count
-  o.set_sensor_count(n);
-  let m = o.get_sensor_count();
-  if n != m {
-    panic!("Warning: failed to set sensor count! {} != {}", m, n);
-  }
-
-  loop {
-    print!("Ultrasonic: ");
-    for i in 0..n {
-      print!("{}  ", o.get_sensor_reading(i));
+    let o = Octasonic::new();
+    let n = 3; // sensor count
+    o.set_sensor_count(n);
+    let m = o.get_sensor_count();
+    if n != m {
+        panic!("Warning: failed to set sensor count! {} != {}", m, n);
     }
-    println!(" cm");
-    thread::sleep(Duration::from_millis(1000));
-  }
+
+    use qik::ConfigParam::*;
+    let mut qik = qik::Qik::new(String::from(conf.qik_device), 123);
+    qik.init();
+
+    let mut counter = 0;
+    let mut b = true;
+    loop {
+        print!("Ultrasonic: ");
+        for i in 0..n {
+            print!("{}  ", o.get_sensor_reading(i));
+        }
+        println!(" cm");
+        thread::sleep(Duration::from_millis(100));
+        counter += 1;
+        if counter % 10 == 0 {
+            counter = 0;
+            b = !b;
+            if b {
+                qik.set_speed(Motor::M0, 80);
+                qik.set_speed(Motor::M1, 80);
+            } else {
+                qik.set_speed(Motor::M0, 0);
+                qik.set_speed(Motor::M1, 0);
+            }
+        }
+    }
 }
