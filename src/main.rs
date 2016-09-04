@@ -108,6 +108,7 @@ fn run_avc(conf: Config) {
     let settings = Settings {
         enable_motors: true, //doc.get(&Yaml::String(String::from("enable_motors"))).unwrap().as_bool().unwrap(),
         max_speed: doc.get(&Yaml::String(String::from("max_speed"))).unwrap().as_i64().unwrap() as i8,
+        obstacle_avoidance_distance: doc.get(&Yaml::String(String::from("obstacle_avoidance_distance"))).unwrap().as_i64().unwrap() as u8,
         differential_drive_coefficient: 1_f32,
         waypoints: course
     };

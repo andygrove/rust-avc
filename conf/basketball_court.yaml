@@ -1,6 +1,7 @@
 enable_motors: true
-max_speed: 127
+max_speed: 80
 min_speed: 0
+obstacle_avoidance_distance: 50
 waypoints:
   - [39.94177796143009, -105.08160397410393]
   - [39.94190648894769, -105.08158653974533]

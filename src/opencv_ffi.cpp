@@ -38,8 +38,8 @@ extern "C" int32_t video_capture() {
   return 0;
 }
 
-extern "C" int32_t video_drawtext(uint32_t x, uint32_t y, const char *s) {
-  putText(frame, s, cvPoint(x,y), FONT_HERSHEY_COMPLEX_SMALL, 0.8, cvScalar(255,255,255,24), 1, CV_AA);
+extern "C" int32_t video_drawtext(uint32_t x, uint32_t y, const char *s, uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+  putText(frame, s, cvPoint(x,y), FONT_HERSHEY_COMPLEX_SMALL, 0.6, cvScalar(b,g,r,a), 1, CV_AA);
   return 0;
 }
 

@@ -7,9 +7,24 @@ use std::ffi::CString;
 extern {
     fn video_init(camera: u32, filename: *const c_char) -> i32;
     fn video_capture() -> i32;
-    fn video_drawtext(x: u32, y: u32, s: *const c_char) -> i32;
+    fn video_drawtext(x: u32, y: u32, s: *const c_char, r: u8, g: u8, b: u8, a: u8) -> i32;
     fn video_write() -> i32;
     fn video_close() -> i32;
+}
+
+pub struct Color {
+    r: u8,
+    g: u8,
+    b: u8,
+    a: u8
+}
+
+impl Color {
+
+    pub fn new(r: u8, g: u8, b: u8, a: u8) {
+        Color { r: r, g: g, b: b, a: a }
+    }
+
 }
 
 pub struct Video {
@@ -37,9 +52,9 @@ impl Video {
         };
     }
 
-    pub fn draw_text(&self, x: u32, y: u32, s: String) {
+    pub fn draw_text(&self, x: u32, y: u32, s: String, c: &Color) {
         let cs = CString::new(s).unwrap();
-        unsafe { video_drawtext(x, y, cs.as_ptr()) };
+        unsafe { video_drawtext(x, y, cs.as_ptr(), c.r, c.g, c.b, c.a) };
     }
 
     pub fn write(&self) {

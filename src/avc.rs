@@ -23,7 +23,8 @@ pub struct Settings {
     pub max_speed: i8,
     pub differential_drive_coefficient: f32,
     pub enable_motors: bool,
-    pub waypoints: Vec<Location>
+    pub waypoints: Vec<Location>,
+    pub obstacle_avoidance_distance: u8
 }
 
 /// the various actions the vehicle can be performing
@@ -231,19 +232,17 @@ impl AVC {
             let ff = state.usonic[1];
             let fr = state.usonic[0];
 
-            let x = 20;
-
-            let avoid = if ff < x {
-                            if fl < x && fr < x {
+            let avoid = if ff < self.settings.obstacle_avoidance_distance {
+                            if fl < self.settings.obstacle_avoidance_distance && fr < self.settings.obstacle_avoidance_distance {
                                 Some(Action::EmergencyStop)
                             } else if fl < fr {
                                 Some(Action::AvoidingObstacleToLeft)
                             } else {
                                 Some(Action::AvoidingObstacleToRight)
                             }
-                        } else if fl < x {
+                        } else if fl < self.settings.obstacle_avoidance_distance {
                             Some(Action::AvoidingObstacleToLeft)
-                        } else if fr < x {
+                        } else if fr < self.settings.obstacle_avoidance_distance {
                             Some(Action::AvoidingObstacleToRight)
                         } else {
                             None
@@ -370,56 +369,59 @@ fn calculate_motor_speed(settings: &Settings, angle: f32) -> i8 {
 fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, frame: i64) {
 
     let mut y = 30;
-    let line_height = 25;
+    let line_height = 20;
+
+    let c = Color::new(127,0,0,255); // r, g, b, alpha
 
     // FPS
     if elapsed > 0 {
         let fps : f32 = (frame as f32) / (elapsed as f32);
-        video.draw_text(500, 25, format!("FPS: {:.*}", 1, fps));
+        video.draw_text(500, 25, format!("FPS: {:.*}", 1, fps), &c);
     }
 
     // Time
-    video.draw_text(30, y, format!("UTC: {}", now.format("%Y-%m-%d %H:%M:%S").to_string()));
+    video.draw_text(30, y, format!("UTC: {}", now.format("%Y-%m-%d %H:%M:%S").to_string()), &c);
     y += line_height;
 
     // GPS
     video.draw_text(30, y, match s.loc {
         None => format!("GPS: N/A"),
         Some((lat,lon)) => format!("GPS: {:.*}, {:.*}", 6, lat, 6, lon)
-    });
+    }, &c);
     y += line_height;
 
     // compass
     video.draw_text(30, y, match s.bearing {
         None => format!("Compass: N/A"),
         Some(b) => format!("Compass: {:.*}", 1, b)
-    });
+    }, &c);
     y += line_height;
 
     // next waypoint number
     video.draw_text(30, y, match s.waypoint {
         None => format!("Waypoint: N/A"),
         Some((n,b)) => format!("Waypoint: {} @ {:.*}", n, 1, b)
-    });
+    }, &c);
     y += line_height;
 
     // how much do we need to turn?
     video.draw_text(30, y, match s.turn {
         None => format!("Turn: N/A"),
         Some(b) => format!("Turn: {:.*}", 1, b)
-    });
+    }, &c);
     y += line_height;
 
     // motor speeds
-    video.draw_text(30, y, format!("Motors: {} / {}", s.speed.0, s.speed.1));
+    video.draw_text(30, y, format!("Motors: {} / {}", s.speed.0, s.speed.1), &c);
     y += line_height;
 
     // ultrasonic sensors
-    video.draw_text(30, y, format!("Ultrasonic: {} {} {}", s.usonic[0], s.usonic[1], s.usonic[2]));
+    video.draw_text(30, y, format!("FL={}, FF={}, FR={}",
+                                   s.usonic[2], s.usonic[1], s.usonic[0]), &c);
     y += line_height;
 
     // action
-    video.draw_text(30, y, format!("{:?}", s.action));
+    video.draw_text(30, y, format!("{:?}", s.action), &c);
 
 }
 
