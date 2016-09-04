@@ -301,6 +301,8 @@ fn test_video(conf: &Config) {
 
     video.init(format!("video-test-{}.mp4", start)).unwrap();
 
+    let c = Color::new(127,0,0,255); // r, g, b, alpha
+
     let mut i = 0;
     loop {
         i += 1;
@@ -316,22 +318,22 @@ fn test_video(conf: &Config) {
 
         video.capture();
         if elapsed > 0 {
-            video.draw_text(30, y, format!("Rendered {} frames in {} seconds", i+1, elapsed));
+            video.draw_text(30, y, format!("Rendered {} frames in {} seconds", i+1, elapsed), &c);
             y += line_height;
-            video.draw_text(30, y, format!("FPS: {:.*}", 1, (i+1) / elapsed));
+            video.draw_text(30, y, format!("FPS: {:.*}", 1, (i+1) / elapsed), &c);
             y += line_height;
         }
 
         video.draw_text(30, y, match gps.get() {
             None => format!("GPS: N/A"),
             Some(loc) => format!("GPS: {:.*}, {:.*}", 6, loc.lat, 6, loc.lon)
-        });
+        }, &c);
         y += line_height;
 
         video.draw_text(30, y, match compass.get() {
             None => format!("Compass: N/A"),
             Some(b) => format!("Compass: {:.*}", 1, b)
-        });
+        }, &c);
 
         video.write();
     }
