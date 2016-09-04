@@ -60,6 +60,7 @@ fn main() {
     opts.optflag("i", "test-imu", "tests the IMU");
     opts.optflag("m", "test-motors", "tests the motors");
     opts.optflag("u", "test-ultrasonic", "tests the ultrasonic sensors");
+    opts.optflag("w", "test-ultrasonic-with-motors", "tests the ultrasonic sensors and motors together");
     opts.optflag("a", "avc", "Start the web server");
 
     let matches = match opts.parse(&args[1..]) {
@@ -78,6 +79,7 @@ fn main() {
     else if matches.opt_present("i") { test_imu(&conf); }
     else if matches.opt_present("m") { test_motors(&conf); }
     else if matches.opt_present("u") { test_ultrasonic(&conf); }
+    else if matches.opt_present("w") { test_ultrasonic_with_motors(&conf); }
     else if matches.opt_present("a") { run_avc(conf); }
     else { panic!("missing cmd line argument .. try --help"); }
 
@@ -337,6 +339,26 @@ fn test_video(conf: &Config) {
 }
 
 fn test_ultrasonic(conf: &Config) {
+    let o = Octasonic::new();
+    let n = 3; // sensor count
+    o.set_sensor_count(n);
+    let m = o.get_sensor_count();
+    if n != m {
+        panic!("Warning: failed to set sensor count! {} != {}", m, n);
+    }
+
+    let mut b = true;
+    loop {
+        print!("Ultrasonic: ");
+        for i in 0..n {
+            print!("{}  ", o.get_sensor_reading(i));
+        }
+        println!(" cm");
+        thread::sleep(Duration::from_millis(100));
+    }
+}
+
+fn test_ultrasonic_with_motors(conf: &Config) {
     let o = Octasonic::new();
     let n = 3; // sensor count
     o.set_sensor_count(n);
