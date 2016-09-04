@@ -371,7 +371,7 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
     let mut y = 30;
     let line_height = 20;
 
-    let c = Color::new(127,0,0,255); // r, g, b, alpha
+    let c = Color::new(127,0,0,24); // r, g, b, alpha
 
     // FPS
     if elapsed > 0 {

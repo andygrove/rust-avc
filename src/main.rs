@@ -301,7 +301,7 @@ fn test_video(conf: &Config) {
 
     video.init(format!("video-test-{}.mp4", start)).unwrap();
 
-    let c = Color::new(127,0,0,255); // r, g, b, alpha
+    let c = Color::new(127,0,0,24); // r, g, b, alpha
 
     let mut i = 0;
     loop {
@@ -314,7 +314,7 @@ fn test_video(conf: &Config) {
         }
 
         let mut y = 30;
-        let line_height = 40;
+        let line_height = 20;
 
         video.capture();
         if elapsed > 0 {
