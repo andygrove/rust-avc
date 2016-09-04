@@ -36,7 +36,7 @@ mod octasonic;
 
 use gps::GPS;
 use compass::Compass;
-use video::Video;
+use video::*;
 use avc::*;
 use octasonic::*;
 
