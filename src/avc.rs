@@ -7,9 +7,10 @@ use super::gps::*;
 use super::motors::*;
 use super::Config;
 
-#[cfg(any(linux))]
+#[cfg(target_os = "linux")]
 use super::octasonic::*;
-#[cfg(not(linux))]
+
+#[cfg(target_os = "macos")]
 use super::octasonic_fake::*;
 
 use chrono::UTC;
