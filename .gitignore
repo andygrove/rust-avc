@@ -4,3 +4,4 @@ lib*.so
 *.mp4
 *.out
 *.log
+captured-*

@@ -260,7 +260,7 @@ fn capture_gps(conf: &Config) {
     gps.start_thread();
     loop {
         if let Some(wp) = gps.get() {
-            println!("GPS: {:?}", wp);
+            println!("Captured: {:.*}, {:.*}", 6, wp.lat, 6, wp.lon);
 
             let mut file = OpenOptions::new()
                 .create(true)
@@ -268,7 +268,7 @@ fn capture_gps(conf: &Config) {
                 .open("captured-waypoints.txt").unwrap();
 
             // write out in YAML format ready for copy-and-paste
-            let s = format!("  - [{}, {}] # captured at {:?}\n", wp.lat, wp.lon, UTC::now());
+            let s = format!("  - [{:.*}, {:.*}] # captured at {:?}\n", 6, wp.lat, 6, wp.lon, UTC::now());
             let b = &s.as_ref();
             file.write(b).unwrap();
 
