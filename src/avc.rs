@@ -4,6 +4,7 @@ extern crate navigation;
 use super::video::*;
 use super::compass::*;
 use super::gps::*;
+use super::motors::*;
 use super::Config;
 
 #[cfg(any(linux))]
@@ -51,7 +52,7 @@ pub struct State {
     waypoint: Option<(usize, f32)>, // waypoint number and bearing
     turn: Option<f32>,
     pub action: Action,
-    speed: (i8,i8),
+    speed: (Motion,Motion),
     usonic: Vec<u8>
 }
 
@@ -64,7 +65,7 @@ impl State {
             waypoint: None,
             turn: None,
             action: Action::WaitingForStartCommand,
-            speed: (0,0),
+            speed: (Motion::Speed(0), Motion::Speed(0)),
             usonic: vec![255,255,255]
         }
     }
@@ -79,10 +80,10 @@ impl State {
 }
 
 /// group all the IO devices in a single strut to make it easier to pass them around
-struct IO {
+struct IO<'a> {
     gps: GPS,
     imu: Compass,
-    qik: Option<Qik>
+    motors: Motors<'a>
 }
 
 pub struct AVC {
@@ -107,14 +108,12 @@ impl AVC {
 
     pub fn run(&self) {
 
+        let mut qik = Qik::new(String::from(self.conf.qik_device), 0);
+
         let mut io = IO {
             gps: GPS::new(self.conf.gps_device),
             imu: Compass::new(self.conf.imu_device),
-            qik: if self.settings.enable_motors {
-                Some(Qik::new(String::from(self.conf.qik_device), 0))
-            } else {
-                None
-            }
+            motors: Motors::new(&mut qik, self.settings.enable_motors)
         };
 
         io.gps.start_thread();
@@ -182,13 +181,8 @@ impl AVC {
             }
         }
 
-        match io.qik {
-            None => {},
-            Some(ref mut q) => {
-                q.set_brake(Motor::M0, 127);
-                q.set_brake(Motor::M1, 127);
-            }
-        }
+        // we'd better stop now
+        io.motors.set(Motion::Brake(127), Motion::Brake(127));
 
         // wait for video writer to finish
         println!("nav thread waiting for video thread to terminate");
@@ -224,19 +218,16 @@ impl AVC {
             match self.check_for_obstacles(state, o) {
                 Some(a) => {
                     state.speed = match a {
-                        Action::AvoidingObstacleToLeft => (self.settings.max_speed, 0),
-                        Action::AvoidingObstacleToRight => (0, self.settings.max_speed),
-                        Action::EmergencyStop => (0, 0),
+                        Action::AvoidingObstacleToLeft =>
+                            (Motion::Speed(self.settings.max_speed), Motion::Brake(60)),
+                        Action::AvoidingObstacleToRight =>
+                            (Motion::Brake(60), Motion::Speed(self.settings.max_speed)),
+                        Action::EmergencyStop =>
+                            (Motion::Brake(127), Motion::Brake(127)),
                         _ => panic!("Unsupported avoidance action: {:?}", a)
                     };
                     state.action = a;
-                    match io.qik {
-                        None => {},
-                        Some(ref mut q) => {
-                            q.set_speed(Motor::M0, state.speed.0);
-                            q.set_speed(Motor::M1, state.speed.1);
-                        }
-                    }
+                    io.motors.set(state.speed.0, state.speed.1);
                     continue
                 },
                 None => {}
@@ -246,14 +237,9 @@ impl AVC {
                 None => {
                     state.loc = None;
                     state.set_action(Action::WaitingForGps);
-                    match io.qik {
-                        None => {},
-                        Some(ref mut q) => {
-                            q.coast(Motor::M0);
-                            q.coast(Motor::M1);
-                            state.speed = (0,0);
-                        }
-                    }
+                    let s = (Motion::Speed(0), Motion::Speed(0));
+                    io.motors.set(s.0, s.1);
+                    state.speed = s;
                 },
                 Some(loc) => {
                     state.loc = Some((loc.lat, loc.lon));
@@ -266,14 +252,9 @@ impl AVC {
                         None => {
                             state.bearing = None;
                             state.set_action(Action::WaitingForCompass);
-                            match io.qik {
-                                None => {},
-                                Some(ref mut q) => {
-                                    q.coast(Motor::M0);
-                                    q.coast(Motor::M1);
-                                    state.speed = (0,0);
-                                }
-                            }
+                            let s = (Motion::Speed(0), Motion::Speed(0));
+                            io.motors.set(s.0, s.1);
+                            state.speed = s;
                         },
                         Some(b) => {
                             state.set_action(Action::Navigating { waypoint: wp_num });
@@ -293,15 +274,8 @@ impl AVC {
                             state.bearing = Some(b);
                             state.waypoint = Some((wp_num, wp_bearing));
                             state.turn = Some(turn);
-                            state.speed = (left_speed, right_speed);
-
-                            match io.qik {
-                                None => {},
-                                Some(ref mut q) => {
-                                    q.set_speed(Motor::M0, state.speed.0);
-                                    q.set_speed(Motor::M1, state.speed.1);
-                                }
-                            }
+                            state.speed = (Motion::Speed(left_speed), Motion::Speed(right_speed));
+                            io.motors.set(state.speed.0, state.speed.1);
                         }
                     }
                 }
@@ -412,7 +386,7 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
     y += line_height;
 
     // motor speeds
-    video.draw_text(30, y, format!("Motors: {} / {}", s.speed.0, s.speed.1), &c);
+    video.draw_text(30, y, format!("Motors: {:?} / {:?}", s.speed.0, s.speed.1), &c);
     y += line_height;
 
     // ultrasonic sensors

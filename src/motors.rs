@@ -1,7 +1,7 @@
 use qik::*;
 
+#[derive(Debug,Copy,Clone,PartialEq)]
 pub enum Motion {
-    Coast,
     Brake(u8),
     Speed(i8)
 }
@@ -23,10 +23,11 @@ impl<'a> Motors<'a> {
     }
 
     fn _set(&mut self, m: Motor, n: Motion) {
-        match n {
-            Motion::Coast => self.qik.coast(m),
-            Motion::Brake(n) => self.qik.set_brake(m, n),
-            Motion::Speed(n) => self.qik.set_speed(m, n)
+        if self.enabled {
+            match n {
+                Motion::Brake(n) => self.qik.set_brake(m, n),
+                Motion::Speed(n) => self.qik.set_speed(m, n)
+            }
         }
     }
 }
