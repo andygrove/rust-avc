@@ -41,8 +41,6 @@ use octasonic::*;
 
 #[cfg(not(linux))]
 mod octasonic_fake;
-#[cfg(not(linux))]
-use octasonic_fake::*;
 
 pub struct Config {
     gps_device: &'static str,
