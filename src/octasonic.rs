@@ -1,6 +1,4 @@
 extern crate spidev;
-use std::io;
-use std::io::prelude::*;
 use self::spidev::{Spidev, SpidevOptions, SpidevTransfer, SPI_MODE_0};
 
 pub struct Octasonic {
