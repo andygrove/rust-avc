@@ -263,6 +263,7 @@ fn capture_gps(conf: &Config) {
             println!("GPS: {:?}", wp);
 
             let mut file = OpenOptions::new()
+                .create(true)
                 .append(true)
                 .open("captured-waypoints.txt").unwrap();
 
