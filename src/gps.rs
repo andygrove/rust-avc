@@ -99,9 +99,9 @@ impl GPS {
         let loc = self.location.lock().unwrap();
         // nasty hack that won't work close to the equator
         if loc.lat < 0.1 && loc.lat > -0.1 {
-            Some(Location { lat: loc.lat, lon: loc.lon })
-        } else {
             None
+        } else {
+            Some(Location { lat: loc.lat, lon: loc.lon })
         }
     }
 
