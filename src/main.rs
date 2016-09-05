@@ -35,17 +35,8 @@ use compass::Compass;
 use video::*;
 use avc::*;
 
-#[cfg(target_os = "linux")]
 mod octasonic;
-
-#[cfg(target_os = "linux")]
 use octasonic::*;
-
-#[cfg(target_os = "macos")]
-mod octasonic_fake;
-
-#[cfg(target_os = "macos")]
-use octasonic_fake::*;
 
 pub struct Config {
     gps_device: &'static str,
@@ -374,12 +365,6 @@ fn test_video(conf: &Config) {
     video.close();
 }
 
-#[cfg(target_os = "macos")]
-fn test_ultrasonic() {
-    panic!("only supported on linux");
-}
-
-#[cfg(target_os = "linux")]
 fn test_ultrasonic() {
     let o = Octasonic::new();
     let n = 3; // sensor count
@@ -400,13 +385,6 @@ fn test_ultrasonic() {
     }
 }
 
-#[cfg(target_os = "macos")]
-#[allow(unused_variables)]
-fn test_ultrasonic_with_motors(conf: &Config) {
-    panic!("only supported on linux");
-}
-
-#[cfg(target_os = "linux")]
 fn test_ultrasonic_with_motors(conf: &Config) {
     let o = Octasonic::new();
     let n = 3; // sensor count
