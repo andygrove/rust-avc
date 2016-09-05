@@ -61,6 +61,7 @@ fn main() {
     opts.optflag("w", "test-ultrasonic-with-motors", "tests the ultrasonic sensors and motors together");
     opts.optflag("c", "capture-gps", "records a GPS waypoint to file");
     opts.optflag("a", "avc", "Start the web server");
+    opts.optflag("f", "filename", "Course filename");
 
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => { m }
@@ -80,12 +81,15 @@ fn main() {
     else if matches.opt_present("u") { test_ultrasonic(); }
     else if matches.opt_present("w") { test_ultrasonic_with_motors(&conf); }
     else if matches.opt_present("c") { capture_gps(&conf); }
-    else if matches.opt_present("a") { run_avc(conf); }
+    else if matches.opt_present("a") {
+        let filename = matches.opt_str("f");
+        run_avc(conf, &filename);
+    }
     else { panic!("missing cmd line argument .. try --help"); }
 
 }
 
-fn run_avc(conf: Config) {
+fn run_avc(conf: Config, filename: &str) {
     //TODO: make cmd-line argument
     let filename = "./conf/basketball_court.yaml";
 
