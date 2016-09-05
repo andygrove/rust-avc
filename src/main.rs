@@ -35,13 +35,17 @@ use compass::Compass;
 use video::*;
 use avc::*;
 
-#[cfg(any(linux))]
+#[cfg(target_os = "linux")]
 mod octasonic;
-#[cfg(any(linux))]
+
+#[cfg(target_os = "linux")]
 use octasonic::*;
 
-#[cfg(not(linux))]
+#[cfg(target_os = "macos")]
 mod octasonic_fake;
+
+#[cfg(target_os = "macos")]
+use octasonic_fake::*;
 
 pub struct Config {
     gps_device: &'static str,
