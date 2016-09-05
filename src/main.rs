@@ -28,6 +28,7 @@ mod gps;
 mod compass;
 mod video;
 mod avc;
+mod motors;
 
 use gps::GPS;
 use compass::Compass;
