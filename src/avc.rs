@@ -40,7 +40,6 @@ pub enum Action {
     AvoidingObstacleToLeft,
     AvoidingObstacleToRight,
     EmergencyStop,
-    Finished,
     Aborted
 }
 
@@ -149,7 +148,7 @@ impl AVC {
 
                     // stop capturing video at end of race
                     match s.action {
-                        Action::Finished | Action::Aborted => {
+                        Action::Aborted => {
                             println!("Aborting video writer thread");
                             break;
                         },
@@ -209,7 +208,7 @@ impl AVC {
                 let mut x = nav_state.lock().unwrap();
 
                 match x.action {
-                    Action::Finished | Action::Aborted => {
+                    Action::Aborted => {
                         println!("Aborting navigation to waypoint {}", wp_num);
                         return false;
                     },
@@ -222,32 +221,7 @@ impl AVC {
             // performing this logic 100 times per second should be enough
             thread::sleep(Duration::from_millis(10));
 
-            // check for obstacles
-            for i in 0 .. 3 {
-                state.usonic[i] = o.get_sensor_reading(i as u8);
-            }
-
-            let fl = state.usonic[2];
-            let ff = state.usonic[1];
-            let fr = state.usonic[0];
-
-            let avoid = if ff < self.settings.obstacle_avoidance_distance {
-                            if fl < self.settings.obstacle_avoidance_distance && fr < self.settings.obstacle_avoidance_distance {
-                                Some(Action::EmergencyStop)
-                            } else if fl < fr {
-                                Some(Action::AvoidingObstacleToLeft)
-                            } else {
-                                Some(Action::AvoidingObstacleToRight)
-                            }
-                        } else if fl < self.settings.obstacle_avoidance_distance {
-                            Some(Action::AvoidingObstacleToLeft)
-                        } else if fr < self.settings.obstacle_avoidance_distance {
-                            Some(Action::AvoidingObstacleToRight)
-                        } else {
-                            None
-                        };
-
-            match avoid {
+            match self.check_for_obstacles(state, o) {
                 Some(a) => {
                     state.speed = match a {
                         Action::AvoidingObstacleToLeft => (self.settings.max_speed, 0),
@@ -332,6 +306,33 @@ impl AVC {
                     }
                 }
             };
+        }
+    }
+
+    fn check_for_obstacles(&self, state: &mut State, o: &Octasonic) -> Option<Action> {
+
+        for i in 0 .. 3 {
+            state.usonic[i] = o.get_sensor_reading(i as u8);
+        }
+
+        let fl = state.usonic[2];
+        let ff = state.usonic[1];
+        let fr = state.usonic[0];
+
+        if ff < self.settings.obstacle_avoidance_distance {
+            if fl < self.settings.obstacle_avoidance_distance && fr < self.settings.obstacle_avoidance_distance {
+                Some(Action::EmergencyStop)
+            } else if fl < fr {
+                Some(Action::AvoidingObstacleToLeft)
+            } else {
+                Some(Action::AvoidingObstacleToRight)
+            }
+        } else if fl < self.settings.obstacle_avoidance_distance {
+            Some(Action::AvoidingObstacleToLeft)
+        } else if fr < self.settings.obstacle_avoidance_distance {
+            Some(Action::AvoidingObstacleToRight)
+        } else {
+            None
         }
     }
 }
