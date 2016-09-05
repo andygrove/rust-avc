@@ -4,8 +4,12 @@ extern crate navigation;
 use super::video::*;
 use super::compass::*;
 use super::gps::*;
-use super::octasonic::*;
 use super::Config;
+
+#[cfg(any(linux))]
+use super::octasonic::*;
+#[cfg(not(linux))]
+use super::octasonic_fake::*;
 
 use chrono::UTC;
 use chrono::DateTime;
@@ -169,6 +173,7 @@ impl AVC {
         });
 
         let o = Octasonic::new();
+
         let n = 3; // sensor count
         o.set_sensor_count(n);
         let m = o.get_sensor_count();

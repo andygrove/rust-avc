@@ -7,7 +7,6 @@ authors = ["Andy Grove <andygrove73@gmail.com>"]
 navigation = "0.1.6"
 serial = "0.3.4"
 #sysfs_gpio = "0.4.3"
-spidev = "0.2.1"
 getopts = "0.2"
 rand = "0.3.13"
 libc = "0.2.0"
@@ -17,3 +16,6 @@ iron = "0.4.0"
 urlencoded = "0.4.1"
 hyper = "0.9.10"
 yaml-rust = "0.3.3"
+
+[target.'cfg(linix)'.dependencies]
+spidev = "0.2.1"

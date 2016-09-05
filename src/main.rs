@@ -32,13 +32,21 @@ mod gps;
 mod compass;
 mod video;
 mod avc;
-mod octasonic;
 
 use gps::GPS;
 use compass::Compass;
 use video::*;
 use avc::*;
+
+#[cfg(any(linux))]
+mod octasonic;
+#[cfg(any(linux))]
 use octasonic::*;
+
+#[cfg(not(linux))]
+mod octasonic_fake;
+#[cfg(not(linux))]
+use octasonic_fake::*;
 
 pub struct Config {
     gps_device: &'static str,
@@ -341,6 +349,12 @@ fn test_video(conf: &Config) {
     video.close();
 }
 
+#[cfg(not(linux))]
+fn test_ultrasonic(conf: &Config) {
+    panic!("only supported on linux");
+}
+
+#[cfg(any(linux))]
 fn test_ultrasonic(conf: &Config) {
     let o = Octasonic::new();
     let n = 3; // sensor count
@@ -361,6 +375,12 @@ fn test_ultrasonic(conf: &Config) {
     }
 }
 
+#[cfg(not(linux))]
+fn test_ultrasonic_with_motors(conf: &Config) {
+    panic!("only supported on linux");
+}
+
+#[cfg(any(linux))]
 fn test_ultrasonic_with_motors(conf: &Config) {
     let o = Octasonic::new();
     let n = 3; // sensor count
