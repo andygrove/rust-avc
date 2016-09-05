@@ -14,17 +14,13 @@ use qik::*;
 use iron::prelude::*;
 use iron::status;
 use urlencoded::UrlEncodedQuery;
-use hyper::header::{Headers, ContentType};
+use hyper::header::{ContentType};
 use hyper::mime::{Mime, TopLevel, SubLevel};
-use yaml_rust::{YamlLoader, YamlEmitter, Yaml};
+use yaml_rust::{YamlLoader, Yaml};
 
-use std::collections::HashMap;
 use std::env;
 use std::fs::File;
 use std::io::Read;
-use std::sync::mpsc::{Sender, Receiver};
-use std::sync::mpsc;
-use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
@@ -86,7 +82,7 @@ fn main() {
     else if matches.opt_present("v") { test_video(&conf); }
     else if matches.opt_present("i") { test_imu(&conf); }
     else if matches.opt_present("m") { test_motors(&conf); }
-    else if matches.opt_present("u") { test_ultrasonic(&conf); }
+    else if matches.opt_present("u") { test_ultrasonic(); }
     else if matches.opt_present("w") { test_ultrasonic_with_motors(&conf); }
     else if matches.opt_present("a") { run_avc(conf); }
     else { panic!("missing cmd line argument .. try --help"); }
@@ -350,12 +346,12 @@ fn test_video(conf: &Config) {
 }
 
 #[cfg(not(linux))]
-fn test_ultrasonic(conf: &Config) {
+fn test_ultrasonic() {
     panic!("only supported on linux");
 }
 
 #[cfg(any(linux))]
-fn test_ultrasonic(conf: &Config) {
+fn test_ultrasonic() {
     let o = Octasonic::new();
     let n = 3; // sensor count
     o.set_sensor_count(n);
@@ -376,6 +372,7 @@ fn test_ultrasonic(conf: &Config) {
 }
 
 #[cfg(not(linux))]
+#[allow(unused_variables)]
 fn test_ultrasonic_with_motors(conf: &Config) {
     panic!("only supported on linux");
 }

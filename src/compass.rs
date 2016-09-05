@@ -70,7 +70,7 @@ impl Compass {
                                 //println!("bearing: {}", n);
                                 compass_bearing.lock().unwrap().set(n);
                             },
-                            Err(e) => println!("Failed to parse bearing '{}'", sentence)
+                            Err(e) => println!("Failed to parse bearing '{}' due to {:?}", sentence, e)
                         }
                         buf.clear();
                     }

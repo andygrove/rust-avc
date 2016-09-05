@@ -1,5 +1,3 @@
-use std::io;
-use std::io::prelude::*;
 
 pub struct Octasonic {
 }
@@ -10,6 +8,7 @@ impl Octasonic {
         Octasonic {}
     }
 
+    #[allow(unused_variables)]
     pub fn set_sensor_count(&self, n: u8) {
     }
 
@@ -17,6 +16,7 @@ impl Octasonic {
         0
     }
 
+    #[allow(unused_variables)]
     pub fn get_sensor_reading(&self, n: u8) -> u8 {
         0
     }

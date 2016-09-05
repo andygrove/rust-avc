@@ -16,8 +16,6 @@ use chrono::DateTime;
 use qik::*;
 use navigation::*;
 
-use std::sync::mpsc::{Sender, Receiver};
-use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
@@ -82,11 +80,10 @@ impl State {
 }
 
 /// group all the IO devices in a single strut to make it easier to pass them around
-struct IO<'a> {
+struct IO {
     gps: GPS,
     imu: Compass,
-    qik: Option<Qik>,
-    video: &'a Video
+    qik: Option<Qik>
 }
 
 pub struct AVC {
@@ -111,8 +108,6 @@ impl AVC {
 
     pub fn run(&self) {
 
-        let video = Video::new(0);
-
         let mut io = IO {
             gps: GPS::new(self.conf.gps_device),
             imu: Compass::new(self.conf.imu_device),
@@ -120,8 +115,7 @@ impl AVC {
                 Some(Qik::new(String::from(self.conf.qik_device), 0))
             } else {
                 None
-            },
-            video: &video
+            }
         };
 
         io.gps.start_thread();
