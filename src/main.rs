@@ -268,7 +268,7 @@ fn capture_gps(conf: &Config) {
                 .open("captured-waypoints.txt").unwrap();
 
             // write out in YAML format ready for copy-and-paste
-            let s = format!("- [{}, {}] # captured at {:?}", wp.lat, wp.lon, UTC::now());
+            let s = format!("  - [{}, {}] # captured at {:?}\n", wp.lat, wp.lon, UTC::now());
             let b = &s.as_ref();
             file.write(b).unwrap();
 

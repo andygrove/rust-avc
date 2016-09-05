@@ -97,7 +97,12 @@ impl GPS {
 
     pub fn get(&self) -> Option<Location> {
         let loc = self.location.lock().unwrap();
-        Some(Location { lat: loc.lat, lon: loc.lon })
+        // nasty hack that won't work close to the equator
+        if loc.lat < 0.1 && loc.lat > -0.1 {
+            Some(Location { lat: loc.lat, lon: loc.lon })
+        } else {
+            None
+        }
     }
 
 }
