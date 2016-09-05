@@ -19,8 +19,8 @@ use hyper::mime::{Mime, TopLevel, SubLevel};
 use yaml_rust::{YamlLoader, Yaml};
 
 use std::env;
-use std::fs::File;
-use std::io::Read;
+use std::fs::{File, OpenOptions};
+use std::io::{Read, Write};
 use std::thread;
 use std::time::Duration;
 
@@ -64,6 +64,7 @@ fn main() {
     opts.optflag("m", "test-motors", "tests the motors");
     opts.optflag("u", "test-ultrasonic", "tests the ultrasonic sensors");
     opts.optflag("w", "test-ultrasonic-with-motors", "tests the ultrasonic sensors and motors together");
+    opts.optflag("c", "capture-gps", "records a GPS waypoint to file");
     opts.optflag("a", "avc", "Start the web server");
 
     let matches = match opts.parse(&args[1..]) {
@@ -83,6 +84,7 @@ fn main() {
     else if matches.opt_present("m") { test_motors(&conf); }
     else if matches.opt_present("u") { test_ultrasonic(); }
     else if matches.opt_present("w") { test_ultrasonic_with_motors(&conf); }
+    else if matches.opt_present("c") { capture_gps(&conf); }
     else if matches.opt_present("a") { run_avc(conf); }
     else { panic!("missing cmd line argument .. try --help"); }
 
@@ -250,6 +252,29 @@ fn run_avc(conf: Config) {
 
     }).http("0.0.0.0:8080").unwrap();
 
+}
+
+fn capture_gps(conf: &Config) {
+    println!("Capturing GPS");
+    let gps = GPS::new(conf.gps_device);
+    gps.start_thread();
+    loop {
+        if let Some(wp) = gps.get() {
+            println!("GPS: {:?}", wp);
+
+            let mut file = OpenOptions::new()
+                .append(true)
+                .open("captured-waypoints.txt").unwrap();
+
+            // write out in YAML format ready for copy-and-paste
+            let s = format!("- [{}, {}] # captured at {:?}", wp.lat, wp.lon, UTC::now());
+            let b = &s.as_ref();
+            file.write(b).unwrap();
+
+            break;
+        }
+        thread::sleep(Duration::from_millis(100));
+    }
 }
 
 
