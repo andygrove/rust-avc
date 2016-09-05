@@ -17,5 +17,5 @@ urlencoded = "0.4.1"
 hyper = "0.9.10"
 yaml-rust = "0.3.3"
 
-[target.'cfg(linix)'.dependencies]
+[target.'cfg(target_os = "linux")'.dependencies]
 spidev = "0.2.1"

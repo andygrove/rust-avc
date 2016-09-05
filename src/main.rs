@@ -370,12 +370,12 @@ fn test_video(conf: &Config) {
     video.close();
 }
 
-#[cfg(not(linux))]
+#[cfg(not(target_os = "linux"))]
 fn test_ultrasonic() {
     panic!("only supported on linux");
 }
 
-#[cfg(any(linux))]
+#[cfg(any(target_os = "linux"))]
 fn test_ultrasonic() {
     let o = Octasonic::new();
     let n = 3; // sensor count
@@ -396,13 +396,13 @@ fn test_ultrasonic() {
     }
 }
 
-#[cfg(not(linux))]
+#[cfg(not(target_os = "linux"))]
 #[allow(unused_variables)]
 fn test_ultrasonic_with_motors(conf: &Config) {
     panic!("only supported on linux");
 }
 
-#[cfg(any(linux))]
+#[cfg(any(target_os = "linux"))]
 fn test_ultrasonic_with_motors(conf: &Config) {
     let o = Octasonic::new();
     let n = 3; // sensor count
