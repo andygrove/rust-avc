@@ -340,51 +340,69 @@ fn calculate_motor_speed(settings: &Settings, angle: f32) -> i8 {
 fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, frame: i64) {
 
     let x1 = 30;
-    let x2 = 400;
-    let mut y = 30;
+    let x2 = 500;
+    let top = 30;
+    let mut y = top;
     let line_height = 20;
 
     let c = Color::new(127,0,0,24); // r, g, b, alpha
     let background = Color::new(50,50,50,24); // r, g, b, alpha
 
-    video.fill_rect(10, 10, 620, 150, &background);
+    video.fill_rect(10, 10, 620, top + line_height * 5, &background);
 
-    // FPS
-    if elapsed > 0 {
-        let fps : f32 = (frame as f32) / (elapsed as f32);
-        video.draw_text(x2, 25, format!("FPS: {:.*}", 1, fps), &c);
-    }
-
-    // Time
-    video.draw_text(x2, y, format!("UTC: {}", now.format("%Y-%m-%d %H:%M:%S").to_string()), &c);
-    y += line_height;
+    // COLUMN 1
 
     // GPS
-    video.draw_text(30, y, match s.loc {
+    video.draw_text(x1, y, match s.loc {
         None => format!("GPS: N/A"),
         Some((lat,lon)) => format!("GPS: {:.*}, {:.*}", 6, lat, 6, lon)
     }, &c);
     y += line_height;
 
     // compass
-    video.draw_text(30, y, match s.bearing {
+    video.draw_text(x1, y, match s.bearing {
         None => format!("Compass: N/A"),
         Some(b) => format!("Compass: {:.*}", 1, b)
     }, &c);
     y += line_height;
 
     // next waypoint number
-    video.draw_text(30, y, match s.waypoint {
+    video.draw_text(x1, y, match s.waypoint {
         None => format!("Waypoint: N/A"),
         Some((n,b)) => format!("Waypoint: {} @ {:.*}", n, 1, b)
     }, &c);
     y += line_height;
 
     // how much do we need to turn?
-    video.draw_text(30, y, match s.turn {
+    video.draw_text(x1, y, match s.turn {
         None => format!("Turn: N/A"),
         Some(b) => format!("Turn: {:.*}", 1, b)
     }, &c);
+    y += line_height;
+
+    // action
+    video.draw_text(x1, y, format!("{:?}", s.action), &c);
+
+    // COLUMN 2
+
+    y = top;
+
+    // Date
+    video.draw_text(x2, y, format!("Date: {}", now.format("%Y-%m-%d").to_string()), &c);
+    y += line_height;
+
+    // Time
+    video.draw_text(x2, y, format!("Time: {}", now.format("%H:%M:%S").to_string()), &c);
+    y += line_height;
+
+    // FPS
+    if elapsed > 0 {
+        let fps : f32 = (frame as f32) / (elapsed as f32);
+        video.draw_text(x2, y, format!("FPS: {:.*}", 1, fps), &c);
+    } else {
+        video.draw_text(x2, y, "FPS: N/A", &c);
+    }
+
     y += line_height;
 
     // motor speeds
@@ -395,9 +413,6 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
     video.draw_text(30, y, format!("FL={}, FF={}, FR={}",
                                    s.usonic[2], s.usonic[1], s.usonic[0]), &c);
     y += line_height;
-
-    // action
-    video.draw_text(30, y, format!("{:?}", s.action), &c);
 
 }
 
