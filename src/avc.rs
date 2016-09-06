@@ -340,15 +340,15 @@ fn calculate_motor_speed(settings: &Settings, angle: f32) -> i8 {
 fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, frame: i64) {
 
     let x1 = 30;
-    let x2 = 500;
-    let top = 30;
-    let mut y = top;
+    let x2 = 350;
+    let top = 20;
     let line_height = 20;
+    let mut y = top + line_height;
 
-    let c = Color::new(127,0,0,24); // r, g, b, alpha
+    let c = Color::new(200,200,200,24); // r, g, b, alpha
     let background = Color::new(50,50,50,24); // r, g, b, alpha
 
-    video.fill_rect(10, 10, 620, top + line_height * 5, &background);
+    video.fill_rect(top, 20, 600, top + line_height * 5, &background);
 
     // COLUMN 1
 
@@ -385,14 +385,10 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
 
     // COLUMN 2
 
-    y = top;
+    y = top + line_height;
 
     // Date
-    video.draw_text(x2, y, format!("Date: {}", now.format("%Y-%m-%d").to_string()), &c);
-    y += line_height;
-
-    // Time
-    video.draw_text(x2, y, format!("Time: {}", now.format("%H:%M:%S").to_string()), &c);
+    video.draw_text(x2, y, format!("UTC: {}", now.format("%Y-%m-%d %H:%M:%S").to_string()), &c);
     y += line_height;
 
     // FPS
@@ -400,17 +396,16 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
         let fps : f32 = (frame as f32) / (elapsed as f32);
         video.draw_text(x2, y, format!("FPS: {:.*}", 1, fps), &c);
     } else {
-        video.draw_text(x2, y, "FPS: N/A", &c);
+        video.draw_text(x2, y, String::from("FPS: N/A"), &c);
     }
-
     y += line_height;
 
     // motor speeds
-    video.draw_text(30, y, format!("Motors: {:?} / {:?}", s.speed.0, s.speed.1), &c);
+    video.draw_text(x2, y, format!("Motors: {:?} / {:?}", s.speed.0, s.speed.1), &c);
     y += line_height;
 
     // ultrasonic sensors
-    video.draw_text(30, y, format!("FL={}, FF={}, FR={}",
+    video.draw_text(x2, y, format!("FL={}, FF={}, FR={}",
                                    s.usonic[2], s.usonic[1], s.usonic[0]), &c);
     y += line_height;
 
