@@ -61,7 +61,7 @@ fn main() {
     opts.optflag("w", "test-ultrasonic-with-motors", "tests the ultrasonic sensors and motors together");
     opts.optflag("c", "capture-gps", "records a GPS waypoint to file");
     opts.optflag("a", "avc", "Start the web server");
-    opts.optflag("f", "filename", "Course filename");
+    opts.optopt("f", "filename", "Course filename", "conf/avc.yaml");
 
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => { m }
@@ -82,7 +82,7 @@ fn main() {
     else if matches.opt_present("w") { test_ultrasonic_with_motors(&conf); }
     else if matches.opt_present("c") { capture_gps(&conf); }
     else if matches.opt_present("a") {
-        let filename = matches.opt_str("f");
+        let filename = matches.opt_str("f").unwrap();
         run_avc(conf, &filename);
     }
     else { panic!("missing cmd line argument .. try --help"); }
@@ -90,8 +90,6 @@ fn main() {
 }
 
 fn run_avc(conf: Config, filename: &str) {
-    //TODO: make cmd-line argument
-    let filename = "./conf/basketball_court.yaml";
 
     let mut input = String::new();
     let mut file = File::open(filename).unwrap();
@@ -329,7 +327,9 @@ fn test_video(conf: &Config) {
 
     video.init(format!("video-test-{}.mp4", start)).unwrap();
 
-    let c = Color::new(127,0,0,24); // r, g, b, alpha
+
+    let c = Color::new(200,200,200,24); // r, g, b, alpha
+    let background = Color::new(50,50,50,24); // r, g, b, alpha
 
     let mut i = 0;
     loop {
@@ -345,6 +345,9 @@ fn test_video(conf: &Config) {
         let line_height = 20;
 
         video.capture();
+
+        video.fill_rect(10, 10, 630, 130, &background);
+
         if elapsed > 0 {
             video.draw_text(30, y, format!("Rendered {} frames in {} seconds", i+1, elapsed), &c);
             y += line_height;

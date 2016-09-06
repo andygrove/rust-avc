@@ -216,9 +216,9 @@ impl AVC {
                 Some(a) => {
                     state.speed = match a {
                         Action::AvoidingObstacleToLeft =>
-                            (Motion::Speed(self.settings.max_speed), Motion::Brake(60)),
+                            (Motion::Speed(self.settings.max_speed), Motion::Speed(0)),
                         Action::AvoidingObstacleToRight =>
-                            (Motion::Brake(60), Motion::Speed(self.settings.max_speed)),
+                            (Motion::Speed(0), Motion::Speed(self.settings.max_speed)),
                         Action::EmergencyStop =>
                             (Motion::Brake(127), Motion::Brake(127)),
                         _ => panic!("Unsupported avoidance action: {:?}", a)

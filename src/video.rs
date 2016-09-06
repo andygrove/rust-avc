@@ -7,6 +7,7 @@ use std::ffi::CString;
 extern {
     fn video_init(camera: u32, filename: *const c_char) -> i32;
     fn video_capture() -> i32;
+    fn video_fillrect(x: u32, y: u32, x2: u32, y2: u32, r: u8, g: u8, b: u8, a: u8) -> i32;
     fn video_drawtext(x: u32, y: u32, s: *const c_char, r: u8, g: u8, b: u8, a: u8) -> i32;
     fn video_write() -> i32;
     fn video_close() -> i32;
@@ -50,6 +51,10 @@ impl Video {
         unsafe {
             video_capture();
         };
+    }
+
+    pub fn fill_rect(&self, x: u32, y: u32, x2: u32, y2: u32, c: &Color) {
+        unsafe { video_fillrect(x, y, x2, y2, c.r, c.g, c.b, c.a) };
     }
 
     pub fn draw_text(&self, x: u32, y: u32, s: String, c: &Color) {
