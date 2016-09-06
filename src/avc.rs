@@ -339,19 +339,24 @@ fn calculate_motor_speed(settings: &Settings, angle: f32) -> i8 {
 
 fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, frame: i64) {
 
+    let x1 = 30;
+    let x2 = 400;
     let mut y = 30;
     let line_height = 20;
 
     let c = Color::new(127,0,0,24); // r, g, b, alpha
+    let background = Color::new(50,50,50,24); // r, g, b, alpha
+
+    video.fill_rect(10, 10, 620, 150, &background);
 
     // FPS
     if elapsed > 0 {
         let fps : f32 = (frame as f32) / (elapsed as f32);
-        video.draw_text(500, 25, format!("FPS: {:.*}", 1, fps), &c);
+        video.draw_text(x2, 25, format!("FPS: {:.*}", 1, fps), &c);
     }
 
     // Time
-    video.draw_text(30, y, format!("UTC: {}", now.format("%Y-%m-%d %H:%M:%S").to_string()), &c);
+    video.draw_text(x2, y, format!("UTC: {}", now.format("%Y-%m-%d %H:%M:%S").to_string()), &c);
     y += line_height;
 
     // GPS

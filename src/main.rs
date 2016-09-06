@@ -346,8 +346,8 @@ fn test_video(conf: &Config) {
 
         video.capture();
 
-        video.fill_rect(10, 10, 630, 130, &background);
-
+        video.fill_rect(10, 10, 620, 150, &background);
+        
         if elapsed > 0 {
             video.draw_text(30, y, format!("Rendered {} frames in {} seconds", i+1, elapsed), &c);
             y += line_height;
