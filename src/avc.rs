@@ -244,7 +244,7 @@ impl AVC {
 
             // update shared state so video can record latest data, and return if the
             // shared state says to abort
-            if !update_shared_state(state, nav_state) {
+            if !self.update_shared_state(state, nav_state) {
                 return false;
             }
 
@@ -277,12 +277,15 @@ impl AVC {
                         Some(b) => {
 
                             // get readings from ultrasonic sensors
-                            let (fl, ff, fr) = check_for_obstacles(&state, o);
+        for i in 0..3 {
+            state.usonic[i] = o.get_sensor_reading(i as u8);
+        }
+        let (fl, ff, fr) = (state.usonic[2], state.usonic[1], state.usonic[0]);
 
                             let min_d = self.settings.obstacle_avoidance_distance;
 
                             // determine avoidance action
-                            let avoidance_action = if (ff < min_d) {
+                            let avoidance_action = if ff < min_d {
                                 // we're about to hit something so we need to turn
                                 // if we were already turning, keep going in the same direction
                                 match state.action {
@@ -303,16 +306,19 @@ impl AVC {
                                     } else {
                                         // if neither left or right blocked, then turn in direction
                                         // we were navigating to
-                                        if state.turn < 0 {
-                                            Some(Action::AvoidingObstacleToRight)
-                                        } else {
-                                            Some(Action::AvoidingObstacleToLeft)
+                                        match state.turn {
+                                            Some(n) => if state.turn.unwrap() < 0.0 {
+                                                    Some(Action::AvoidingObstacleToRight)
+                                                } else {
+                                                    Some(Action::AvoidingObstacleToLeft)
+                                                },
+                                            None => Some(Action::AvoidingObstacleToLeft)
                                         }
                                     }
                                 }
-                            } else if (fl < min_d) {
+                            } else if fl < min_d {
                                 Some(Action::AvoidingObstacleToLeft)
-                            } else if (fr < min_d) {
+                            } else if fr < min_d {
                                 Some(Action::AvoidingObstacleToRight)
                             } else {
                                 None
@@ -340,7 +346,7 @@ impl AVC {
                                     // make sure the brakes get to stick for a while
                                     thread::sleep(Duration::from_millis(100))
                                 },
-                                None => {
+                                _ => {
                                     // continue with navigation towards waypoint
                                     state.set_action(Action::Navigating { waypoint: wp_num });
                                     let wp_bearing = loc.calc_bearing_to(&wp) as f32;
@@ -375,7 +381,7 @@ impl AVC {
         let mut x = nav_state.lock().unwrap();
         match x.action {
             Action::Aborted => {
-                println!("Aborting navigation to waypoint {}", wp_num);
+                println!("Aborting navigation");
                 return false;
             }
             _ => {}
@@ -383,35 +389,13 @@ impl AVC {
         *x = Box::new(state.clone());
         true
     }
-
+/*
     fn check_for_obstacles(&self, state: &mut State, o: &Octasonic) -> (u8,u8,u8) {
         for i in 0..3 {
             state.usonic[i] = o.get_sensor_reading(i as u8);
         }
         (state.usonic[2], state.usonic[1], state.usonic[0])
-    }
-
-//        let fl = state.usonic[2];
-//        let ff = state.usonic[1];
-//        let fr = state.usonic[0];
-//
-//        if ff < self.settings.obstacle_avoidance_distance {
-//            if fl < self.settings.obstacle_avoidance_distance &&
-//               fr < self.settings.obstacle_avoidance_distance {
-//                Some(Action::EmergencyStop)
-//            } else if fl < fr {
-//                Some(Action::AvoidingObstacleToLeft)
-//            } else {
-//                Some(Action::AvoidingObstacleToRight)
-//            }
-//        } else if fl < self.settings.obstacle_avoidance_distance {
-//            Some(Action::AvoidingObstacleToLeft)
-//        } else if fr < self.settings.obstacle_avoidance_distance {
-//            Some(Action::AvoidingObstacleToRight)
-//        } else {
-//            None
-//        }
-//    }
+    }*/
 }
 
 
