@@ -122,7 +122,6 @@ fn run_avc(conf: Config, filename: &str) {
     }
 
     let settings = Settings {
-        enable_motors: true,
         max_speed: doc.get(&Yaml::String(String::from("max_speed")))
             .unwrap()
             .as_i64()
