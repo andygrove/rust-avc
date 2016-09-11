@@ -8,7 +8,7 @@ extern crate sysfs_gpio;
 use sysfs_gpio::{Direction, Pin};
 use getopts::Options;
 use chrono::UTC;
-use navigation::*;
+use navigation::{Location};
 use qik::*;
 use yaml_rust::{YamlLoader, Yaml};
 

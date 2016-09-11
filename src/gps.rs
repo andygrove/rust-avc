@@ -69,14 +69,14 @@ impl GPS {
 
                                 // println!("{} {}, {} {}", lat, lat_ns, lon, lon_ew);
 
-                                let x = Location::parse_nmea(lat, lat_ns, lon, lon_ew);
-
-                                // TODO: only update the shared state if the co-ords changed
-
-                                // on receive valid co-ords ...
-                                let mut loc = gps_location.lock().unwrap();
-                                loc.set(x.lat, x.lon);
-
+                                match Location::parse_nmea(lat, lat_ns, lon, lon_ew) {
+                                    Ok(x) => {
+                                        // TODO: only update the shared state if the co-ords changed
+                                        let mut loc = gps_location.lock().unwrap();
+                                        loc.set(x.lat, x.lon);
+                                    },
+                                    Err(e) => println!("Failed to parse GPS: {}", e)
+                                }
                             }
                             _ => {}
                         }

@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["Andy Grove <andygrove73@gmail.com>"]
 
 [dependencies]
-navigation = "0.1.6"
+navigation = "0.1.7"
 serial = "0.3.4"
 getopts = "0.2"
 rand = "0.3.13"
