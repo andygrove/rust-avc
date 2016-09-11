@@ -1,6 +1,11 @@
 #!/bin/bash
 export DISPLAY=0.0
 export LD_LIBRARY_PATH=/usr/local/lib
+export RUST_BACKTRACE=1
+gpio write 17 0
+gpio export 17 in
+gpio write 18 0
+gpio export 18 out
 cd ~/rust-avc
-./target/debug/avc --avc --filename=conf/home.yaml
+./target/debug/avc --avc --filename=conf/oe.yaml
 sleep 10
