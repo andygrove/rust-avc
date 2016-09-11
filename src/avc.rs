@@ -109,6 +109,28 @@ impl AVC {
 
     pub fn run(&self) {
 
+        // because we want to see videos even if we CTRL-C ...
+        let signal_guard = SignalGuard::new();
+
+        let signal_state = self.shared_state.clone();
+        let handle = thread::spawn(move || {
+            self.run();
+        });
+
+        signal_guard.at_exit(move |sig| {
+            println!("Signal {} received.", sig);
+
+            let mut state = signal_state.lock().unwrap();
+            state.set_action(Action::Aborted);
+
+            STOP.store(true, Ordering::Release);
+            handle.join().unwrap();
+        });
+
+    }
+
+    fn _run(&self) {
+
         let mut qik = Qik::new(String::from(self.conf.qik_device), 0);
 
         let switch = Switch::new(17);
@@ -128,26 +150,6 @@ impl AVC {
         // times per second
         //    let shared_state = Arc::new(Mutex::new(Box::new(State::new())));
 
-        // because we want to see videos even if we CTRL-C ...
-        let signal_guard = SignalGuard::new();
-
-        let signal_state = self.shared_state.clone();
-        let handle = thread::spawn(move || {
-            println!("Worker thread started. Type Ctrl+C to stop.");
-            while !STOP.load(Ordering::Acquire) {
-                println!("working...");
-                thread::sleep(Duration::from_millis(500));
-            }
-            let mut state = signal_state.lock().unwrap();
-            state.set_action(Action::Aborted);
-            println!("Bye.");
-        });
-
-        signal_guard.at_exit(move |sig| {
-            println!("Signal {} received.", sig);
-            STOP.store(true, Ordering::Release);
-            handle.join().unwrap();
-        });
 
         // start the thread to write the video
         let video_state = self.shared_state.clone();
