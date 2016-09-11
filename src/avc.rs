@@ -277,52 +277,11 @@ impl AVC {
                         Some(b) => {
 
                             // get readings from ultrasonic sensors
-        for i in 0..3 {
-            state.usonic[i] = o.get_sensor_reading(i as u8);
-        }
-        let (fl, ff, fr) = (state.usonic[2], state.usonic[1], state.usonic[0]);
+                            for i in 0..3 {
+                                state.usonic[i] = o.get_sensor_reading(i as u8);
+                            }
 
-                            let min_d = self.settings.obstacle_avoidance_distance;
-
-                            // determine avoidance action
-                            let avoidance_action = if ff < min_d {
-                                // we're about to hit something so we need to turn
-                                // if we were already turning, keep going in the same direction
-                                match state.action {
-                                    Action::AvoidingObstacleToLeft => Some(Action::AvoidingObstacleToLeft),
-                                    Action::AvoidingObstacleToRight => Some(Action::AvoidingObstacleToRight),
-                                    _ => if fl < min_d {
-                                        if fr < min_d {
-                                            Some(Action::EmergencyStop)
-                                        } else {
-                                            Some(Action::AvoidingObstacleToLeft)
-                                        }
-                                    } else if fr < min_d {
-                                        if fl < min_d {
-                                            Some(Action::EmergencyStop)
-                                        } else {
-                                            Some(Action::AvoidingObstacleToRight)
-                                        }
-                                    } else {
-                                        // if neither left or right blocked, then turn in direction
-                                        // we were navigating to
-                                        match state.turn {
-                                            Some(n) => if state.turn.unwrap() < 0.0 {
-                                                    Some(Action::AvoidingObstacleToRight)
-                                                } else {
-                                                    Some(Action::AvoidingObstacleToLeft)
-                                                },
-                                            None => Some(Action::AvoidingObstacleToLeft)
-                                        }
-                                    }
-                                }
-                            } else if fl < min_d {
-                                Some(Action::AvoidingObstacleToLeft)
-                            } else if fr < min_d {
-                                Some(Action::AvoidingObstacleToRight)
-                            } else {
-                                None
-                            };
+                            let avoidance_action = self.check_obstacles(&state);
 
                             match avoidance_action {
                                 Some(Action::AvoidingObstacleToLeft) => {
@@ -330,13 +289,13 @@ impl AVC {
                                     let s = (Motion::Speed(127), Motion::Speed(0));
                                     io.motors.set(s.0, s.1);
                                     state.speed = s;
-                                },
+                                }
                                 Some(Action::AvoidingObstacleToRight) => {
                                     state.set_action(Action::AvoidingObstacleToRight);
                                     let s = (Motion::Speed(0), Motion::Speed(127));
                                     io.motors.set(s.0, s.1);
                                     state.speed = s;
-                                },
+                                }
                                 Some(Action::EmergencyStop) => {
                                     state.set_action(Action::EmergencyStop);
                                     let s = (Motion::Brake(127), Motion::Brake(127));
@@ -345,7 +304,7 @@ impl AVC {
 
                                     // make sure the brakes get to stick for a while
                                     thread::sleep(Duration::from_millis(100))
-                                },
+                                }
                                 _ => {
                                     // continue with navigation towards waypoint
                                     state.set_action(Action::Navigating { waypoint: wp_num });
@@ -356,16 +315,19 @@ impl AVC {
 
                                     if turn < 0_f32 {
                                         // turn left by reducing speed of left motor
-                                        left_speed = calculate_motor_speed(&self.settings, turn.abs());
+                                        left_speed = calculate_motor_speed(&self.settings,
+                                                                           turn.abs());
                                     } else {
                                         // turn right by reducing speed of right motor
-                                        right_speed = calculate_motor_speed(&self.settings, turn.abs());
+                                        right_speed = calculate_motor_speed(&self.settings,
+                                                                            turn.abs());
                                     };
 
                                     state.bearing = Some(b);
                                     state.waypoint = Some((wp_num, wp_bearing));
                                     state.turn = Some(turn);
-                                    state.speed = (Motion::Speed(left_speed), Motion::Speed(right_speed));
+                                    state.speed = (Motion::Speed(left_speed),
+                                                   Motion::Speed(right_speed));
                                     io.motors.set(state.speed.0, state.speed.1);
                                 }
                             }
@@ -373,6 +335,55 @@ impl AVC {
                     }
                 }
             };
+        }
+    }
+
+    fn check_obstacles(&self, state: &State) -> Option<Action> {
+        let (fl, ff, fr) = (state.usonic[2], state.usonic[1], state.usonic[0]);
+
+        let min_d = self.settings.obstacle_avoidance_distance;
+
+        // determine avoidance action
+        if ff < min_d {
+            // we're about to hit something so we need to turn
+            // if we were already turning, keep going in the same direction
+            match state.action {
+                Action::AvoidingObstacleToLeft => Some(Action::AvoidingObstacleToLeft),
+                Action::AvoidingObstacleToRight => Some(Action::AvoidingObstacleToRight),
+                _ => {
+                    if fl < min_d {
+                        if fr < min_d {
+                            Some(Action::EmergencyStop)
+                        } else {
+                            Some(Action::AvoidingObstacleToLeft)
+                        }
+                    } else if fr < min_d {
+                        if fl < min_d {
+                            Some(Action::EmergencyStop)
+                        } else {
+                            Some(Action::AvoidingObstacleToRight)
+                        }
+                    } else {
+                        // turn in direction we were navigating to
+                        match state.turn {
+                            Some(n) => {
+                                if state.turn.unwrap() < 0.0 {
+                                    Some(Action::AvoidingObstacleToRight)
+                                } else {
+                                    Some(Action::AvoidingObstacleToLeft)
+                                }
+                            }
+                            None => Some(Action::AvoidingObstacleToLeft),
+                        }
+                    }
+                }
+            }
+        } else if fl < min_d {
+            Some(Action::AvoidingObstacleToLeft)
+        } else if fr < min_d {
+            Some(Action::AvoidingObstacleToRight)
+        } else {
+            None
         }
     }
 
@@ -389,13 +400,12 @@ impl AVC {
         *x = Box::new(state.clone());
         true
     }
-/*
-    fn check_for_obstacles(&self, state: &mut State, o: &Octasonic) -> (u8,u8,u8) {
-        for i in 0..3 {
-            state.usonic[i] = o.get_sensor_reading(i as u8);
-        }
-        (state.usonic[2], state.usonic[1], state.usonic[0])
-    }*/
+    // fn check_for_obstacles(&self, state: &mut State, o: &Octasonic) -> (u8,u8,u8) {
+    // for i in 0..3 {
+    // state.usonic[i] = o.get_sensor_reading(i as u8);
+    // }
+    // (state.usonic[2], state.usonic[1], state.usonic[0])
+    // }
 }
 
 
