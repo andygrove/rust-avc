@@ -440,10 +440,17 @@ fn test_ultrasonic_with_motors(conf: &Config) {
 fn test_switch() {
   println!("Testing switch");
   let mut s = Switch::new(17);
+  s.start_thread();
+  let mut state = s.get();
     loop {
-      s.poll().unwrap();
-      println!("Switch is {:?}", s.state);
+      let new_state = s.get();
+      if state != new_state {
+        println!("Switch is {:?}", new_state);
+        state = new_state;
+      }
     }
+ 
+      
 }
 
 
