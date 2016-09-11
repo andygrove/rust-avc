@@ -345,37 +345,29 @@ impl AVC {
 
         // determine avoidance action
         if ff < min_d {
-            // we're about to hit something so we need to turn
-            // if we were already turning, keep going in the same direction
-            match state.action {
-                Action::AvoidingObstacleToLeft => Some(Action::AvoidingObstacleToLeft),
-                Action::AvoidingObstacleToRight => Some(Action::AvoidingObstacleToRight),
-                _ => {
-                    if fl < min_d {
-                        if fr < min_d {
-                            Some(Action::EmergencyStop)
+            if fl < min_d {
+                if fr < min_d {
+                    Some(Action::EmergencyStop)
+                } else {
+                    Some(Action::AvoidingObstacleToLeft)
+                }
+            } else if fr < min_d {
+                if fl < min_d {
+                    Some(Action::EmergencyStop)
+                } else {
+                    Some(Action::AvoidingObstacleToRight)
+                }
+            } else {
+                // turn in direction we were navigating to
+                match state.turn {
+                    Some(n) => {
+                        if state.turn.unwrap() < 0.0 {
+                            Some(Action::AvoidingObstacleToRight)
                         } else {
                             Some(Action::AvoidingObstacleToLeft)
                         }
-                    } else if fr < min_d {
-                        if fl < min_d {
-                            Some(Action::EmergencyStop)
-                        } else {
-                            Some(Action::AvoidingObstacleToRight)
-                        }
-                    } else {
-                        // turn in direction we were navigating to
-                        match state.turn {
-                            Some(n) => {
-                                if state.turn.unwrap() < 0.0 {
-                                    Some(Action::AvoidingObstacleToRight)
-                                } else {
-                                    Some(Action::AvoidingObstacleToLeft)
-                                }
-                            }
-                            None => Some(Action::AvoidingObstacleToLeft),
-                        }
                     }
+                    None => Some(Action::AvoidingObstacleToLeft),
                 }
             }
         } else if fl < min_d {
