@@ -6,7 +6,9 @@ extern crate chrono;
 extern crate navigation;
 extern crate qik;
 extern crate yaml_rust;
+extern crate sysfs_gpio;
 
+use sysfs_gpio::{Direction, Pin};
 use getopts::Options;
 use chrono::UTC;
 use navigation::*;
@@ -29,11 +31,13 @@ mod compass;
 mod video;
 mod avc;
 mod motors;
+mod switch;
 
 use gps::GPS;
 use compass::Compass;
 use video::*;
 use avc::*;
+use switch::*;
 
 mod octasonic;
 use octasonic::*;
@@ -57,6 +61,7 @@ fn main() {
     opts.optflag("v", "test-video", "tests the video");
     opts.optflag("i", "test-imu", "tests the IMU");
     opts.optflag("m", "test-motors", "tests the motors");
+    opts.optflag("s", "test-switch", "tests the switch");
     opts.optflag("u", "test-ultrasonic", "tests the ultrasonic sensors");
     opts.optflag("w", "test-ultrasonic-with-motors", "tests the ultrasonic sensors and motors together");
     opts.optflag("c", "capture-gps", "records a GPS waypoint to file");
@@ -78,6 +83,7 @@ fn main() {
     else if matches.opt_present("v") { test_video(&conf); }
     else if matches.opt_present("i") { test_imu(&conf); }
     else if matches.opt_present("m") { test_motors(&conf); }
+    else if matches.opt_present("s") { test_switch(); }
     else if matches.opt_present("u") { test_ultrasonic(); }
     else if matches.opt_present("w") { test_ultrasonic_with_motors(&conf); }
     else if matches.opt_present("c") { capture_gps(&conf); }
@@ -428,3 +434,11 @@ fn test_ultrasonic_with_motors(conf: &Config) {
         }
     }
 }
+
+fn test_switch() {
+  println!("Testing switch");
+  let s = Switch::new(17);
+  s.poll().unwrap();
+}
+
+

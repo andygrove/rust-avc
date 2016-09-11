@@ -6,7 +6,6 @@ authors = ["Andy Grove <andygrove73@gmail.com>"]
 [dependencies]
 navigation = "0.1.6"
 serial = "0.3.4"
-#sysfs_gpio = "0.4.3"
 getopts = "0.2"
 rand = "0.3.13"
 libc = "0.2.0"
@@ -19,3 +18,4 @@ yaml-rust = "0.3.3"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 spidev = "0.2.1"
+sysfs_gpio = "0.4.3"
