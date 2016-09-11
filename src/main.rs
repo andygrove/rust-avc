@@ -194,7 +194,7 @@ fn test_imu(conf: &Config) {
 fn test_motors(conf: &Config) {
     println!("Testing motors");
     use qik::ConfigParam::*;
-    let mut qik = qik::Qik::new(String::from(conf.qik_device), 123);
+    let mut qik = qik::Qik::new(String::from(conf.qik_device), 18);
     qik.init();
     println!("Firmware version: {}", qik.get_firmware_version());
     println!("MOTOR_M0_ACCELERATION : {}",
@@ -308,7 +308,7 @@ fn test_ultrasonic_with_motors(conf: &Config) {
     }
 
     use qik::ConfigParam::*;
-    let mut qik = qik::Qik::new(String::from(conf.qik_device), 123);
+    let mut qik = qik::Qik::new(String::from(conf.qik_device), 18);
     qik.init();
 
     let mut counter = 0;
