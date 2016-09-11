@@ -1,5 +1,6 @@
 extern crate chrono;
 extern crate navigation;
+extern crate graceful;
 
 use super::video::*;
 use super::compass::*;
@@ -17,6 +18,14 @@ use navigation::*;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
+
+use std::sync::atomic::{ATOMIC_BOOL_INIT, AtomicBool, Ordering};
+use std::time::Duration;
+use std::thread;
+
+use graceful::SignalGuard;
+
+static STOP: AtomicBool = ATOMIC_BOOL_INIT;
 
 // NOTE: public fields are bad practice ... will fix later
 pub struct Settings {
@@ -122,6 +131,27 @@ impl AVC {
         // times per second
         //    let shared_state = Arc::new(Mutex::new(Box::new(State::new())));
 
+        // because we want to see videos even if we CTRL-C ...
+        let signal_guard = SignalGuard::new();
+
+        let signal_state = self.shared_state.clone();
+        let handle = thread::spawn(move || {
+            println!("Worker thread started. Type Ctrl+C to stop.");
+            while !STOP.load(Ordering::Acquire) {
+                println!("working...");
+                thread::sleep(Duration::from_millis(500));
+            }
+            let mut state = signal_state.lock().unwrap();
+            state.set_action(Action::Aborted);
+            println!("Bye.");
+        });
+
+        signal_guard.at_exit(move |sig| {
+            println!("Signal {} received.", sig);
+            STOP.store(true, Ordering::Release);
+            handle.join().unwrap();
+        });
+
         // start the thread to write the video
         let video_state = self.shared_state.clone();
         let video_thread = thread::spawn(move || {
@@ -184,7 +214,6 @@ impl AVC {
         }
         println!("Detected START switch!");
 
-        state.set_action(Action::Navigating { waypoint: 1 });
 
         let nav_state = self.shared_state.clone();
         for (i, waypoint) in self.settings.waypoints.iter().enumerate() {
@@ -195,6 +224,9 @@ impl AVC {
                                           &nav_state,
                                           &o,
                                           &switch) {
+
+                // set shared state to Aborted so the video thread finishes
+                let mut state = nav_state.lock().unwrap();
                 state.set_action(Action::Aborted);
                 break;
             }
@@ -203,7 +235,10 @@ impl AVC {
         // set action to finished, unless it is Aborted
         match state.action {
             Action::Aborted => {}
-            _ => state.set_action(Action::Finished),
+            _ => {
+                let mut state = nav_state.lock().unwrap();
+                state.set_action(Action::Finished);
+            },
         }
 
         // we'd better stop now
