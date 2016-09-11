@@ -18,12 +18,9 @@ use navigation::*;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
-
 use std::sync::atomic::{ATOMIC_BOOL_INIT, AtomicBool, Ordering};
-use std::time::Duration;
-use std::thread;
 
-use graceful::SignalGuard;
+use self::graceful::SignalGuard;
 
 static STOP: AtomicBool = ATOMIC_BOOL_INIT;
 
