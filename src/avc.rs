@@ -38,7 +38,8 @@ pub enum Action {
     AvoidingObstacleToLeft,
     AvoidingObstacleToRight,
     EmergencyStop,
-    Aborted
+    Aborted,
+    Finished
 }
 
 /// instrumentation data to display on the video stream
@@ -147,7 +148,7 @@ impl AVC {
 
                     // stop capturing video at end of race
                     match s.action {
-                        Action::Aborted => {
+                        Action::Aborted | Action::Finished => {
                             println!("Aborting video writer thread");
                             break;
                         },
@@ -173,7 +174,7 @@ impl AVC {
             panic!("Warning: failed to set sensor count! {} != {}", m, n);
         }
         
-	let mut state = State::new();
+	    let mut state = State::new();
 
         // wait for start switch
         println!("Waiting for START switch...");
@@ -191,8 +192,15 @@ impl AVC {
         let nav_state = self.shared_state.clone();
         for (i, waypoint) in self.settings.waypoints.iter().enumerate() {
             if !self.navigate_to_waypoint(i+1, &waypoint, &mut io, &mut state, &nav_state, &o, &switch) {
+                state.set_action(Action::Aborted);
                 break;
             }
+        }
+
+        // set action to finished, unless it is Aborted
+        match state.action {
+            Action::Aborted => {},
+            _ => state.set_action(Action::Finished)
         }
 
         // we'd better stop now
@@ -211,17 +219,20 @@ impl AVC {
     ) -> bool {
         loop {
 
-            match switch.get() {
-              Some(false) => {
-                println!("Aborting due to kill switch");
-                return false;
-              },
-              _ => {}
-            }
+            let sv = switch.get();
 
             // replace the shared state ... using a block here to limit the scope of the mutex
             {
                 let mut x = nav_state.lock().unwrap();
+
+                match sv {
+                    Some(false) => {
+                        println!("Aborting due to kill switch");
+                        *x.set_action(Action::Aborted);
+                        return false;
+                    },
+                    _ => {}
+                }
 
                 match x.action {
                     Action::Aborted => {
