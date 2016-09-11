@@ -23,6 +23,8 @@ use yaml_rust::{YamlLoader, Yaml};
 use std::env;
 use std::fs::{File, OpenOptions};
 use std::io::{Read, Write};
+use std::sync::mpsc::channel;
+use std::sync::mpsc::Receiver;
 use std::thread;
 use std::time::Duration;
 
@@ -437,8 +439,11 @@ fn test_ultrasonic_with_motors(conf: &Config) {
 
 fn test_switch() {
   println!("Testing switch");
-  let s = Switch::new(17);
-  s.poll().unwrap();
+  let mut s = Switch::new(17);
+    loop {
+      s.poll().unwrap();
+      println!("Switch is {:?}", s.state);
+    }
 }
 
 
