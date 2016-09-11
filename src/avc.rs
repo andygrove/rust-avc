@@ -28,7 +28,6 @@ static STOP: AtomicBool = ATOMIC_BOOL_INIT;
 pub struct Settings {
     pub max_speed: i8,
     pub differential_drive_coefficient: f32,
-    pub enable_motors: bool,
     pub waypoints: Vec<Location>,
     pub obstacle_avoidance_distance: u8,
 }
@@ -117,7 +116,7 @@ impl AVC {
         let mut io = IO {
             gps: GPS::new(self.conf.gps_device),
             imu: Compass::new(self.conf.imu_device),
-            motors: Motors::new(&mut qik, self.settings.enable_motors),
+            motors: Motors::new(&mut qik),
         };
 
         io.gps.start_thread();
