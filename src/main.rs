@@ -39,7 +39,7 @@ use octasonic::*;
 pub struct Config {
     gps_device: &'static str,
     imu_device: &'static str,
-    qik_device: &'static str
+    qik_device: &'static str,
 }
 
 fn main() {
@@ -50,21 +50,23 @@ fn main() {
     let _ = args[0].clone();
 
     let mut opts = Options::new();
-    opts.optopt( "o", "out", "set video output file name", "out.mp4");
+    opts.optopt("o", "out", "set video output file name", "out.mp4");
     opts.optflag("g", "test-gps", "tests the GPS");
     opts.optflag("v", "test-video", "tests the video");
     opts.optflag("i", "test-imu", "tests the IMU");
     opts.optflag("m", "test-motors", "tests the motors");
     opts.optflag("s", "test-switch", "tests the switch");
     opts.optflag("u", "test-ultrasonic", "tests the ultrasonic sensors");
-    opts.optflag("w", "test-ultrasonic-with-motors", "tests the ultrasonic sensors and motors together");
+    opts.optflag("w",
+                 "test-ultrasonic-with-motors",
+                 "tests the ultrasonic sensors and motors together");
     opts.optflag("c", "capture-gps", "records a GPS waypoint to file");
     opts.optflag("a", "avc", "Start the web server");
     opts.optopt("f", "filename", "Course filename", "conf/avc.yaml");
 
     let matches = match opts.parse(&args[1..]) {
-        Ok(m) => { m }
-        Err(f) => { panic!(f.to_string()) }
+        Ok(m) => m,
+        Err(f) => panic!(f.to_string()),
     };
 
     let conf = Config {
@@ -73,22 +75,31 @@ fn main() {
         qik_device: "/dev/qik",
     };
 
-    if      matches.opt_present("g") { test_gps(&conf); }
-    else if matches.opt_present("v") { test_video(&conf); }
-    else if matches.opt_present("i") { test_imu(&conf); }
-    else if matches.opt_present("m") { test_motors(&conf); }
-    else if matches.opt_present("s") { test_switch(); }
-    else if matches.opt_present("u") { test_ultrasonic(); }
-    else if matches.opt_present("w") { test_ultrasonic_with_motors(&conf); }
-    else if matches.opt_present("c") { capture_gps(&conf); }
-    else if matches.opt_present("a") {
+    if matches.opt_present("g") {
+        test_gps(&conf);
+    } else if matches.opt_present("v") {
+        test_video(&conf);
+    } else if matches.opt_present("i") {
+        test_imu(&conf);
+    } else if matches.opt_present("m") {
+        test_motors(&conf);
+    } else if matches.opt_present("s") {
+        test_switch();
+    } else if matches.opt_present("u") {
+        test_ultrasonic();
+    } else if matches.opt_present("w") {
+        test_ultrasonic_with_motors(&conf);
+    } else if matches.opt_present("c") {
+        capture_gps(&conf);
+    } else if matches.opt_present("a") {
         let filename = match matches.opt_str("f") {
             Some(f) => f,
-            None => panic!("missing --filename argument")
+            None => panic!("missing --filename argument"),
         };
         run_avc(conf, &filename);
+    } else {
+        panic!("missing cmd line argument .. try --help");
     }
-    else { panic!("missing cmd line argument .. try --help"); }
 
 }
 
@@ -101,8 +112,8 @@ fn run_avc(conf: Config, filename: &str) {
     let doc = &docs[0].as_hash().unwrap();
 
     let waypoints = doc.get(&Yaml::String(String::from("waypoints"))).unwrap().as_vec().unwrap();
-    let mut course : Vec<Location> = vec![];
-    for i in 0 .. waypoints.len() {
+    let mut course: Vec<Location> = vec![];
+    for i in 0..waypoints.len() {
         let wp = &waypoints[i].as_vec().unwrap();
         let lat = wp[0].as_f64().unwrap();
         let lon = wp[1].as_f64().unwrap();
@@ -111,11 +122,18 @@ fn run_avc(conf: Config, filename: &str) {
     }
 
     let settings = Settings {
-        enable_motors: true, //doc.get(&Yaml::String(String::from("enable_motors"))).unwrap().as_bool().unwrap(),
-        max_speed: doc.get(&Yaml::String(String::from("max_speed"))).unwrap().as_i64().unwrap() as i8,
-        obstacle_avoidance_distance: doc.get(&Yaml::String(String::from("obstacle_avoidance_distance"))).unwrap().as_i64().unwrap() as u8,
+        enable_motors: true,
+        max_speed: doc.get(&Yaml::String(String::from("max_speed")))
+            .unwrap()
+            .as_i64()
+            .unwrap() as i8,
+        obstacle_avoidance_distance:
+            doc.get(&Yaml::String(String::from("obstacle_avoidance_distance")))
+            .unwrap()
+            .as_i64()
+            .unwrap() as u8,
         differential_drive_coefficient: 1_f32,
-        waypoints: course
+        waypoints: course,
     };
 
     let avc = AVC::new(conf, settings);
@@ -133,10 +151,16 @@ fn capture_gps(conf: &Config) {
             let mut file = OpenOptions::new()
                 .create(true)
                 .append(true)
-                .open("captured-waypoints.txt").unwrap();
+                .open("captured-waypoints.txt")
+                .unwrap();
 
             // write out in YAML format ready for copy-and-paste
-            let s = format!("  - [{:.*}, {:.*}] # captured at {:?}\n", 6, wp.lat, 6, wp.lon, UTC::now());
+            let s = format!("  - [{:.*}, {:.*}] # captured at {:?}\n",
+                            6,
+                            wp.lat,
+                            6,
+                            wp.lon,
+                            UTC::now());
             let b = &s.as_ref();
             file.write(b).unwrap();
 
@@ -173,9 +197,11 @@ fn test_motors(conf: &Config) {
     let mut qik = qik::Qik::new(String::from(conf.qik_device), 123);
     qik.init();
     println!("Firmware version: {}", qik.get_firmware_version());
-    println!("MOTOR_M0_ACCELERATION : {}", qik.get_config(MOTOR_M0_ACCELERATION));
-    println!("MOTOR_M1_ACCELERATION : {}", qik.get_config(MOTOR_M1_ACCELERATION));
-    for i in 0 .. 127 {
+    println!("MOTOR_M0_ACCELERATION : {}",
+             qik.get_config(MOTOR_M0_ACCELERATION));
+    println!("MOTOR_M1_ACCELERATION : {}",
+             qik.get_config(MOTOR_M1_ACCELERATION));
+    for i in 0..127 {
         qik.set_speed(Motor::M0, i);
         qik.set_speed(Motor::M1, i);
         std::thread::sleep(Duration::from_millis(30));
@@ -199,8 +225,8 @@ fn test_video(conf: &Config) {
     video.init(format!("video-test-{}.mp4", start)).unwrap();
 
 
-    let c = Color::new(200,200,200,24); // r, g, b, alpha
-    let background = Color::new(50,50,50,24); // r, g, b, alpha
+    let c = Color::new(200, 200, 200, 24); // r, g, b, alpha
+    let background = Color::new(50, 50, 50, 24); // r, g, b, alpha
 
     let mut i = 0;
     loop {
@@ -218,24 +244,33 @@ fn test_video(conf: &Config) {
         video.capture();
 
         video.fill_rect(10, 10, 620, 150, &background);
-        
+
         if elapsed > 0 {
-            video.draw_text(30, y, format!("Rendered {} frames in {} seconds", i+1, elapsed), &c);
+            video.draw_text(30,
+                            y,
+                            format!("Rendered {} frames in {} seconds", i + 1, elapsed),
+                            &c);
             y += line_height;
-            video.draw_text(30, y, format!("FPS: {:.*}", 1, (i+1) / elapsed), &c);
+            video.draw_text(30, y, format!("FPS: {:.*}", 1, (i + 1) / elapsed), &c);
             y += line_height;
         }
 
-        video.draw_text(30, y, match gps.get() {
-            None => format!("GPS: N/A"),
-            Some(loc) => format!("GPS: {:.*}, {:.*}", 6, loc.lat, 6, loc.lon)
-        }, &c);
+        video.draw_text(30,
+                        y,
+                        match gps.get() {
+                            None => format!("GPS: N/A"),
+                            Some(loc) => format!("GPS: {:.*}, {:.*}", 6, loc.lat, 6, loc.lon),
+                        },
+                        &c);
         y += line_height;
 
-        video.draw_text(30, y, match compass.get() {
-            None => format!("Compass: N/A"),
-            Some(b) => format!("Compass: {:.*}", 1, b)
-        }, &c);
+        video.draw_text(30,
+                        y,
+                        match compass.get() {
+                            None => format!("Compass: N/A"),
+                            Some(b) => format!("Compass: {:.*}", 1, b),
+                        },
+                        &c);
 
         video.write();
     }
@@ -301,19 +336,17 @@ fn test_ultrasonic_with_motors(conf: &Config) {
 }
 
 fn test_switch() {
-  println!("Testing switch");
-  let mut s = Switch::new(17);
-  s.start_thread();
-  let mut state = s.get();
+    println!("Testing switch");
+    let mut s = Switch::new(17);
+    s.start_thread();
+    let mut state = s.get();
     loop {
-      let new_state = s.get();
-      if state != new_state {
-        println!("Switch is {:?}", new_state);
-        state = new_state;
-      }
+        let new_state = s.get();
+        if state != new_state {
+            println!("Switch is {:?}", new_state);
+            state = new_state;
+        }
     }
- 
-      
+
+
 }
-
-

@@ -4,7 +4,7 @@ use self::libc::c_char;
 use std::ffi::CString;
 
 #[link(name="opencv_ffi")]
-extern {
+extern "C" {
     fn video_init(camera: u32, filename: *const c_char) -> i32;
     fn video_capture() -> i32;
     fn video_fillrect(x: u32, y: u32, x2: u32, y2: u32, r: u8, g: u8, b: u8, a: u8) -> i32;
@@ -17,23 +17,25 @@ pub struct Color {
     r: u8,
     g: u8,
     b: u8,
-    a: u8
+    a: u8,
 }
 
 impl Color {
-
     pub fn new(r: u8, g: u8, b: u8, a: u8) -> Self {
-        Color { r: r, g: g, b: b, a: a }
+        Color {
+            r: r,
+            g: g,
+            b: b,
+            a: a,
+        }
     }
-
 }
 
 pub struct Video {
-    camera: u32
+    camera: u32,
 }
 
 impl Video {
-
     pub fn new(camera: u32) -> Self {
         Video { camera: camera }
     }
@@ -42,7 +44,7 @@ impl Video {
         let f = CString::new(filename).unwrap();
         match unsafe { video_init(self.camera, f.as_ptr()) } {
             0 => Ok(()),
-            s @ _ => Err(s)
+            s @ _ => Err(s),
         }
     }
 
@@ -63,7 +65,9 @@ impl Video {
     }
 
     pub fn write(&self) {
-        unsafe { video_write(); }
+        unsafe {
+            video_write();
+        }
     }
 
     pub fn close(&self) {

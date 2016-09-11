@@ -4,5 +4,6 @@ lib*.so
 *.mp4
 *.out
 *.log
+*.bk
 captured-*
 conf/home.yaml

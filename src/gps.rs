@@ -11,15 +11,14 @@ use std::time::Duration;
 
 pub struct GPS {
     filename: &'static str,
-    location: Arc<Mutex<Location>>
+    location: Arc<Mutex<Location>>,
 }
 
 impl GPS {
-
     pub fn new(f: &'static str) -> Self {
         GPS {
             filename: f,
-            location: Arc::new(Mutex::new(Location::new(0 as f64, 0 as f64)))
+            location: Arc::new(Mutex::new(Location::new(0 as f64, 0 as f64))),
         }
     }
 
@@ -31,29 +30,30 @@ impl GPS {
         let mut port = serial::open(f).unwrap();
 
         port.reconfigure(&|settings| {
-            settings.set_baud_rate(serial::Baud57600).unwrap();
-            settings.set_char_size(serial::Bits8);
-            settings.set_parity(serial::ParityNone);
-            settings.set_stop_bits(serial::Stop1);
-            settings.set_flow_control(serial::FlowNone);
-            Ok(())
-        }).unwrap();
+                settings.set_baud_rate(serial::Baud57600).unwrap();
+                settings.set_char_size(serial::Bits8);
+                settings.set_parity(serial::ParityNone);
+                settings.set_stop_bits(serial::Stop1);
+                settings.set_flow_control(serial::FlowNone);
+                Ok(())
+            })
+            .unwrap();
 
         port.set_timeout(Duration::from_millis(5000)).unwrap();
 
         // start thread to read from serial port
         let _ = thread::spawn(move || {
 
-            let mut buf : Vec<char> = vec![];
+            let mut buf: Vec<char> = vec![];
             let mut read_buf = vec![0_u8; 128];
 
             loop {
                 let n = port.read(&mut read_buf[..]).unwrap();
                 for i in 0..n {
                     let ch = read_buf[i] as char;
-                    if ch=='\n' {
+                    if ch == '\n' {
                         let sentence = String::from(&buf[..]);
-                        //println!("NMEA: {}", sentence);
+                        // println!("NMEA: {}", sentence);
 
                         let parts: Vec<&str> = sentence.split(",").collect();
 
@@ -67,20 +67,18 @@ impl GPS {
                                 let _ = parts[5];    // hhmmss.sss
                                 let _ = parts[6];  // A=valid, V=not valid
 
-                                //println!("{} {}, {} {}", lat, lat_ns, lon, lon_ew);
+                                // println!("{} {}, {} {}", lat, lat_ns, lon, lon_ew);
 
                                 let x = Location::parse_nmea(lat, lat_ns, lon, lon_ew);
 
-                                //TODO: only update the shared state if the co-ords changed
+                                // TODO: only update the shared state if the co-ords changed
 
                                 // on receive valid co-ords ...
                                 let mut loc = gps_location.lock().unwrap();
                                 loc.set(x.lat, x.lon);
 
-                            },
-                            _ => {
-
                             }
+                            _ => {}
                         }
 
                         buf.clear();
@@ -101,8 +99,10 @@ impl GPS {
         if loc.lat < 0.1 && loc.lat > -0.1 {
             None
         } else {
-            Some(Location { lat: loc.lat, lon: loc.lon })
+            Some(Location {
+                lat: loc.lat,
+                lon: loc.lon,
+            })
         }
     }
-
 }

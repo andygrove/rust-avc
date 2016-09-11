@@ -18,13 +18,13 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
-//NOTE: public fields are bad practice ... will fix later
+// NOTE: public fields are bad practice ... will fix later
 pub struct Settings {
     pub max_speed: i8,
     pub differential_drive_coefficient: f32,
     pub enable_motors: bool,
     pub waypoints: Vec<Location>,
-    pub obstacle_avoidance_distance: u8
+    pub obstacle_avoidance_distance: u8,
 }
 
 /// the various actions the vehicle can be performing
@@ -39,23 +39,22 @@ pub enum Action {
     AvoidingObstacleToRight,
     EmergencyStop,
     Aborted,
-    Finished
+    Finished,
 }
 
 /// instrumentation data to display on the video stream
 #[derive(Clone,Debug)]
 pub struct State {
-    loc: Option<(f64,f64)>,
+    loc: Option<(f64, f64)>,
     bearing: Option<f32>,
     waypoint: Option<(usize, f32)>, // waypoint number and bearing
     turn: Option<f32>,
     pub action: Action,
-    speed: (Motion,Motion),
-    usonic: Vec<u8>
+    speed: (Motion, Motion),
+    usonic: Vec<u8>,
 }
 
 impl State {
-
     fn new() -> Self {
         State {
             loc: None,
@@ -64,7 +63,7 @@ impl State {
             turn: None,
             action: Action::WaitingForStartCommand,
             speed: (Motion::Speed(0), Motion::Speed(0)),
-            usonic: vec![255,255,255]
+            usonic: vec![255, 255, 255],
         }
     }
 
@@ -74,29 +73,27 @@ impl State {
         }
         self.action = a;
     }
-
 }
 
 /// group all the IO devices in a single strut to make it easier to pass them around
 struct IO<'a> {
     gps: GPS,
     imu: Compass,
-    motors: Motors<'a>
+    motors: Motors<'a>,
 }
 
 pub struct AVC {
     conf: Config,
     settings: Settings,
-    shared_state: Arc<Mutex<Box<State>>>
+    shared_state: Arc<Mutex<Box<State>>>,
 }
 
 impl AVC {
-
     pub fn new(conf: Config, settings: Settings) -> Self {
         AVC {
             conf: conf,
             settings: settings,
-            shared_state: Arc::new(Mutex::new(Box::new(State::new())))
+            shared_state: Arc::new(Mutex::new(Box::new(State::new()))),
         }
     }
 
@@ -113,7 +110,7 @@ impl AVC {
         let mut io = IO {
             gps: GPS::new(self.conf.gps_device),
             imu: Compass::new(self.conf.imu_device),
-            motors: Motors::new(&mut qik, self.settings.enable_motors)
+            motors: Motors::new(&mut qik, self.settings.enable_motors),
         };
 
         io.gps.start_thread();
@@ -144,14 +141,14 @@ impl AVC {
 
                 {
                     let s = video_state.lock().unwrap();
-                    //println!("{:?}", *s);
+                    // println!("{:?}", *s);
 
                     // stop capturing video at end of race
                     match s.action {
                         Action::Aborted | Action::Finished => {
                             println!("Aborting video writer thread");
                             break;
-                        },
+                        }
                         _ => {}
                     };
 
@@ -173,17 +170,17 @@ impl AVC {
         if n != m {
             panic!("Warning: failed to set sensor count! {} != {}", m, n);
         }
-        
-	    let mut state = State::new();
+
+        let mut state = State::new();
 
         // wait for start switch
         println!("Waiting for START switch...");
         loop {
-          match switch.get() {
-            Some(true) => break,
-            _ => {}
-          }
-          thread::sleep(Duration::from_millis(10));
+            match switch.get() {
+                Some(true) => break,
+                _ => {}
+            }
+            thread::sleep(Duration::from_millis(10));
         }
         println!("Detected START switch!");
 
@@ -191,7 +188,13 @@ impl AVC {
 
         let nav_state = self.shared_state.clone();
         for (i, waypoint) in self.settings.waypoints.iter().enumerate() {
-            if !self.navigate_to_waypoint(i+1, &waypoint, &mut io, &mut state, &nav_state, &o, &switch) {
+            if !self.navigate_to_waypoint(i + 1,
+                                          &waypoint,
+                                          &mut io,
+                                          &mut state,
+                                          &nav_state,
+                                          &o,
+                                          &switch) {
                 state.set_action(Action::Aborted);
                 break;
             }
@@ -199,8 +202,8 @@ impl AVC {
 
         // set action to finished, unless it is Aborted
         match state.action {
-            Action::Aborted => {},
-            _ => state.set_action(Action::Finished)
+            Action::Aborted => {}
+            _ => state.set_action(Action::Finished),
         }
 
         // we'd better stop now
@@ -212,11 +215,15 @@ impl AVC {
         println!("nav thread finished waiting for video thread to terminate");
     }
 
-    fn navigate_to_waypoint(&self, wp_num: usize, wp: &Location, io: &mut IO,
+    fn navigate_to_waypoint(&self,
+                            wp_num: usize,
+                            wp: &Location,
+                            io: &mut IO,
                             state: &mut State,
                             nav_state: &Arc<Mutex<Box<State>>>,
-                            o: &Octasonic, switch: &Switch
-    ) -> bool {
+                            o: &Octasonic,
+                            switch: &Switch)
+                            -> bool {
         loop {
 
             let sv = switch.get();
@@ -230,7 +237,7 @@ impl AVC {
                         println!("Aborting due to kill switch");
                         *x.set_action(Action::Aborted);
                         return false;
-                    },
+                    }
                     _ => {}
                 }
 
@@ -238,7 +245,7 @@ impl AVC {
                     Action::Aborted => {
                         println!("Aborting navigation to waypoint {}", wp_num);
                         return false;
-                    },
+                    }
                     _ => {}
                 };
 
@@ -251,18 +258,19 @@ impl AVC {
             match self.check_for_obstacles(state, o) {
                 Some(a) => {
                     state.speed = match a {
-                        Action::AvoidingObstacleToLeft =>
-                            (Motion::Speed(self.settings.max_speed), Motion::Speed(0)),
-                        Action::AvoidingObstacleToRight =>
-                            (Motion::Speed(0), Motion::Speed(self.settings.max_speed)),
-                        Action::EmergencyStop =>
-                            (Motion::Brake(127), Motion::Brake(127)),
-                        _ => panic!("Unsupported avoidance action: {:?}", a)
+                        Action::AvoidingObstacleToLeft => {
+                            (Motion::Speed(self.settings.max_speed), Motion::Speed(0))
+                        }
+                        Action::AvoidingObstacleToRight => {
+                            (Motion::Speed(0), Motion::Speed(self.settings.max_speed))
+                        }
+                        Action::EmergencyStop => (Motion::Brake(127), Motion::Brake(127)),
+                        _ => panic!("Unsupported avoidance action: {:?}", a),
                     };
                     state.action = a;
                     io.motors.set(state.speed.0, state.speed.1);
-                    continue
-                },
+                    continue;
+                }
                 None => {}
             }
 
@@ -273,7 +281,7 @@ impl AVC {
                     let s = (Motion::Speed(0), Motion::Speed(0));
                     io.motors.set(s.0, s.1);
                     state.speed = s;
-                },
+                }
                 Some(loc) => {
                     state.loc = Some((loc.lat, loc.lon));
                     if close_enough(&loc, &wp) {
@@ -288,7 +296,7 @@ impl AVC {
                             let s = (Motion::Speed(0), Motion::Speed(0));
                             io.motors.set(s.0, s.1);
                             state.speed = s;
-                        },
+                        }
                         Some(b) => {
                             state.set_action(Action::Navigating { waypoint: wp_num });
                             let wp_bearing = loc.calc_bearing_to(&wp) as f32;
@@ -318,7 +326,7 @@ impl AVC {
 
     fn check_for_obstacles(&self, state: &mut State, o: &Octasonic) -> Option<Action> {
 
-        for i in 0 .. 3 {
+        for i in 0..3 {
             state.usonic[i] = o.get_sensor_reading(i as u8);
         }
 
@@ -327,7 +335,8 @@ impl AVC {
         let fr = state.usonic[0];
 
         if ff < self.settings.obstacle_avoidance_distance {
-            if fl < self.settings.obstacle_avoidance_distance && fr < self.settings.obstacle_avoidance_distance {
+            if fl < self.settings.obstacle_avoidance_distance &&
+               fr < self.settings.obstacle_avoidance_distance {
                 Some(Action::EmergencyStop)
             } else if fl < fr {
                 Some(Action::AvoidingObstacleToLeft)
@@ -353,10 +362,9 @@ fn calc_bearing_diff(current_bearing: f32, wp_bearing: f32) -> f32 {
     let mut ret = wp_bearing - current_bearing;
     if ret < -180_f32 {
         ret += 360_f32;
+    } else if ret > 180_f32 {
+        ret -= 360_f32;
     }
-        else if ret > 180_f32 {
-            ret -= 360_f32;
-        }
     ret
 }
 
@@ -381,39 +389,51 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
     let line_height = 20;
     let mut y = top + line_height;
 
-    let c = Color::new(200,200,200,24); // r, g, b, alpha
-    let background = Color::new(50,50,50,24); // r, g, b, alpha
+    let c = Color::new(200, 200, 200, 24); // r, g, b, alpha
+    let background = Color::new(50, 50, 50, 24); // r, g, b, alpha
 
     video.fill_rect(top, 20, 600, top + line_height * 5, &background);
 
     // COLUMN 1
 
     // GPS
-    video.draw_text(x1, y, match s.loc {
-        None => format!("GPS: N/A"),
-        Some((lat,lon)) => format!("GPS: {:.*}, {:.*}", 6, lat, 6, lon)
-    }, &c);
+    video.draw_text(x1,
+                    y,
+                    match s.loc {
+                        None => format!("GPS: N/A"),
+                        Some((lat, lon)) => format!("GPS: {:.*}, {:.*}", 6, lat, 6, lon),
+                    },
+                    &c);
     y += line_height;
 
     // compass
-    video.draw_text(x1, y, match s.bearing {
-        None => format!("Compass: N/A"),
-        Some(b) => format!("Compass: {:.*}", 1, b)
-    }, &c);
+    video.draw_text(x1,
+                    y,
+                    match s.bearing {
+                        None => format!("Compass: N/A"),
+                        Some(b) => format!("Compass: {:.*}", 1, b),
+                    },
+                    &c);
     y += line_height;
 
     // next waypoint number
-    video.draw_text(x1, y, match s.waypoint {
-        None => format!("Waypoint: N/A"),
-        Some((n,b)) => format!("Waypoint: {} @ {:.*}", n, 1, b)
-    }, &c);
+    video.draw_text(x1,
+                    y,
+                    match s.waypoint {
+                        None => format!("Waypoint: N/A"),
+                        Some((n, b)) => format!("Waypoint: {} @ {:.*}", n, 1, b),
+                    },
+                    &c);
     y += line_height;
 
     // how much do we need to turn?
-    video.draw_text(x1, y, match s.turn {
-        None => format!("Turn: N/A"),
-        Some(b) => format!("Turn: {:.*}", 1, b)
-    }, &c);
+    video.draw_text(x1,
+                    y,
+                    match s.turn {
+                        None => format!("Turn: N/A"),
+                        Some(b) => format!("Turn: {:.*}", 1, b),
+                    },
+                    &c);
     y += line_height;
 
     // action
@@ -424,12 +444,15 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
     y = top + line_height;
 
     // Date
-    video.draw_text(x2, y, format!("UTC: {}", now.format("%Y-%m-%d %H:%M:%S").to_string()), &c);
+    video.draw_text(x2,
+                    y,
+                    format!("UTC: {}", now.format("%Y-%m-%d %H:%M:%S").to_string()),
+                    &c);
     y += line_height;
 
     // FPS
     if elapsed > 0 {
-        let fps : f32 = (frame as f32) / (elapsed as f32);
+        let fps: f32 = (frame as f32) / (elapsed as f32);
         video.draw_text(x2, y, format!("FPS: {:.*}", 1, fps), &c);
     } else {
         video.draw_text(x2, y, String::from("FPS: N/A"), &c);
@@ -437,15 +460,17 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
     y += line_height;
 
     // motor speeds
-    video.draw_text(x2, y, format!("Motors: {:?} / {:?}", s.speed.0, s.speed.1), &c);
+    video.draw_text(x2,
+                    y,
+                    format!("Motors: {:?} / {:?}", s.speed.0, s.speed.1),
+                    &c);
     y += line_height;
 
     // ultrasonic sensors
-    video.draw_text(x2, y, format!("FL={}, FF={}, FR={}",
-                                   s.usonic[2], s.usonic[1], s.usonic[0]), &c);
+    video.draw_text(x2,
+                    y,
+                    format!("FL={}, FF={}, FR={}", s.usonic[2], s.usonic[1], s.usonic[0]),
+                    &c);
     y += line_height;
 
 }
-
-
-
