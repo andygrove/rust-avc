@@ -217,7 +217,7 @@ fn test_motors(conf: &Config) {
     qik.init();
 
 
-    let motors = Motors::new(&qik);
+    let mut motors = Motors::new(&mut qik);
     for i in 0..127 {
         motors.set(Motion::Speed(i), Motion::Speed(i));
         std::thread::sleep(Duration::from_millis(30));
