@@ -1,0 +1,11 @@
+enable_motors: true
+max_speed: 127
+min_speed: 0
+obstacle_avoidance_distance: 70
+waypoints:
+  - [39.915410, -105.120073] # captured at 2016-09-11T20:19:40.137231760Z
+  - [39.915372, -105.120258] # captured at 2016-09-11T20:20:07.291236521Z
+  - [39.915277, -105.120238] # captured at 2016-09-11T20:20:32.081811626Z
+  - [39.915298, -105.120115] # captured at 2016-09-11T20:20:52.750227863Z
+
+
