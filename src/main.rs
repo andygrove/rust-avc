@@ -32,6 +32,7 @@ use compass::Compass;
 use video::*;
 use avc::*;
 use switch::*;
+use motors::*;
 
 mod octasonic;
 use octasonic::*;
