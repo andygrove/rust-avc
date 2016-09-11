@@ -190,7 +190,7 @@ fn test_imu(conf: &Config) {
     }
 }
 
-fn test_motors(conf: &Config) {
+fn test_qik(conf: &Config) {
     println!("Testing motors");
     use qik::ConfigParam::*;
     let mut qik = qik::Qik::new(String::from(conf.qik_device), 18);
@@ -207,6 +207,21 @@ fn test_motors(conf: &Config) {
     }
     qik.set_speed(Motor::M0, 0);
     qik.set_speed(Motor::M1, 0);
+}
+
+fn test_motors(conf: &Config) {
+    println!("Testing motors");
+    use qik::ConfigParam::*;
+    let mut qik = qik::Qik::new(String::from(conf.qik_device), 18);
+    qik.init();
+
+
+    let motors = Motors::new(&qik);
+    for i in 0..127 {
+        motors.set(Motion::Speed(i), Motion::Speed(i));
+        std::thread::sleep(Duration::from_millis(30));
+    }
+    motors.set(Motion::Brake(127), Motion::Brake(127));
 }
 
 fn test_video(conf: &Config) {
