@@ -226,20 +226,14 @@ impl AVC {
                             -> bool {
         loop {
 
-            let sv = switch.get();
+            match switch.get() {
+                Some(false) => return false,
+                _ => {}
+            }
 
             // replace the shared state ... using a block here to limit the scope of the mutex
             {
                 let mut x = nav_state.lock().unwrap();
-
-                match sv {
-                    Some(false) => {
-                        println!("Aborting due to kill switch");
-                        *x.set_action(Action::Aborted);
-                        return false;
-                    }
-                    _ => {}
-                }
 
                 match x.action {
                     Action::Aborted => {
