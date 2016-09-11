@@ -106,30 +106,8 @@ impl AVC {
     pub fn get_shared_state(&self) -> Arc<Mutex<Box<State>>> {
         self.shared_state.clone()
     }
-
+    
     pub fn run(&self) {
-
-        // because we want to see videos even if we CTRL-C ...
-        let signal_guard = SignalGuard::new();
-
-        let signal_state = self.shared_state.clone();
-        let handle = thread::spawn(move || {
-            self.run();
-        });
-
-        signal_guard.at_exit(move |sig| {
-            println!("Signal {} received.", sig);
-
-            let mut state = signal_state.lock().unwrap();
-            state.set_action(Action::Aborted);
-
-            STOP.store(true, Ordering::Release);
-            handle.join().unwrap();
-        });
-
-    }
-
-    fn _run(&self) {
 
         let mut qik = Qik::new(String::from(self.conf.qik_device), 0);
 
@@ -144,12 +122,6 @@ impl AVC {
         io.gps.start_thread();
         io.imu.start_thread();
         switch.start_thread();
-
-        // sharing state with a Mutex rather than using channels due to the producer and consumer
-        // operating at such different rates and the producer only needing the latest state 24
-        // times per second
-        //    let shared_state = Arc::new(Mutex::new(Box::new(State::new())));
-
 
         // start the thread to write the video
         let video_state = self.shared_state.clone();
@@ -189,6 +161,7 @@ impl AVC {
 
             println!("Closing video file");
             video.close();
+            println!("Video thread terminated");
         });
 
         let o = Octasonic::new();
@@ -244,9 +217,9 @@ impl AVC {
         io.motors.set(Motion::Brake(127), Motion::Brake(127));
 
         // wait for video writer to finish
-        println!("nav thread waiting for video thread to terminate");
+        println!("Waiting for video thread to terminate ...");
         video_thread.join().unwrap();
-        println!("nav thread finished waiting for video thread to terminate");
+        println!("Finished!");
     }
 
     fn navigate_to_waypoint(&self,
@@ -258,8 +231,12 @@ impl AVC {
                             o: &Octasonic,
                             switch: &Switch)
                             -> bool {
+
+        println!("navigate_to_waypoint({})", wp_num);
+
         loop {
 
+            // check for kill switch
             match switch.get() {
                 Some(false) => return false,
                 _ => {}
@@ -283,6 +260,7 @@ impl AVC {
             // performing this logic 100 times per second should be enough
             thread::sleep(Duration::from_millis(10));
 
+/*
             match self.check_for_obstacles(state, o) {
                 Some(a) => {
                     state.speed = match a {
@@ -301,7 +279,7 @@ impl AVC {
                 }
                 None => {}
             }
-
+*/
             match io.gps.get() {
                 None => {
                     state.loc = None;
