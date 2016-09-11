@@ -106,7 +106,7 @@ impl AVC {
     pub fn get_shared_state(&self) -> Arc<Mutex<Box<State>>> {
         self.shared_state.clone()
     }
-    
+
     pub fn run(&self) {
 
         let mut qik = Qik::new(String::from(self.conf.qik_device), 0);
@@ -210,7 +210,7 @@ impl AVC {
             _ => {
                 let mut state = nav_state.lock().unwrap();
                 state.set_action(Action::Finished);
-            },
+            }
         }
 
         // we'd better stop now
@@ -242,44 +242,15 @@ impl AVC {
                 _ => {}
             }
 
-            // replace the shared state ... using a block here to limit the scope of the mutex
-            {
-                let mut x = nav_state.lock().unwrap();
-
-                match x.action {
-                    Action::Aborted => {
-                        println!("Aborting navigation to waypoint {}", wp_num);
-                        return false;
-                    }
-                    _ => {}
-                };
-
-                *x = Box::new(state.clone());
+            // update shared state so video can record latest data, and return if the
+            // shared state says to abort
+            if !update_shared_state(state, nav_state) {
+                return false;
             }
 
             // performing this logic 100 times per second should be enough
             thread::sleep(Duration::from_millis(10));
 
-/*
-            match self.check_for_obstacles(state, o) {
-                Some(a) => {
-                    state.speed = match a {
-                        Action::AvoidingObstacleToLeft => {
-                            (Motion::Speed(self.settings.max_speed), Motion::Speed(0))
-                        }
-                        Action::AvoidingObstacleToRight => {
-                            (Motion::Speed(0), Motion::Speed(self.settings.max_speed))
-                        }
-                        Action::EmergencyStop => (Motion::Brake(127), Motion::Brake(127)),
-                        _ => panic!("Unsupported avoidance action: {:?}", a),
-                    };
-                    state.action = a;
-                    io.motors.set(state.speed.0, state.speed.1);
-                    continue;
-                }
-                None => {}
-            }
-*/
             match io.gps.get() {
                 None => {
                     state.loc = None;
@@ -304,25 +275,94 @@ impl AVC {
                             state.speed = s;
                         }
                         Some(b) => {
-                            state.set_action(Action::Navigating { waypoint: wp_num });
-                            let wp_bearing = loc.calc_bearing_to(&wp) as f32;
-                            let turn = calc_bearing_diff(b, wp_bearing);
-                            let mut left_speed = self.settings.max_speed;
-                            let mut right_speed = self.settings.max_speed;
 
-                            if turn < 0_f32 {
-                                // turn left by reducing speed of left motor
-                                left_speed = calculate_motor_speed(&self.settings, turn.abs());
+                            // get readings from ultrasonic sensors
+                            let (fl, ff, fr) = check_for_obstacles(&state, o);
+
+                            let min_d = self.settings.obstacle_avoidance_distance;
+
+                            // determine avoidance action
+                            let avoidance_action = if (ff < min_d) {
+                                // we're about to hit something so we need to turn
+                                // if we were already turning, keep going in the same direction
+                                match state.action {
+                                    Action::AvoidingObstacleToLeft => Some(Action::AvoidingObstacleToLeft),
+                                    Action::AvoidingObstacleToRight => Some(Action::AvoidingObstacleToRight),
+                                    _ => if fl < min_d {
+                                        if fr < min_d {
+                                            Some(Action::EmergencyStop)
+                                        } else {
+                                            Some(Action::AvoidingObstacleToLeft)
+                                        }
+                                    } else if fr < min_d {
+                                        if fl < min_d {
+                                            Some(Action::EmergencyStop)
+                                        } else {
+                                            Some(Action::AvoidingObstacleToRight)
+                                        }
+                                    } else {
+                                        // if neither left or right blocked, then turn in direction
+                                        // we were navigating to
+                                        if state.turn < 0 {
+                                            Some(Action::AvoidingObstacleToRight)
+                                        } else {
+                                            Some(Action::AvoidingObstacleToLeft)
+                                        }
+                                    }
+                                }
+                            } else if (fl < min_d) {
+                                Some(Action::AvoidingObstacleToLeft)
+                            } else if (fr < min_d) {
+                                Some(Action::AvoidingObstacleToRight)
                             } else {
-                                // turn right by reducing speed of right motor
-                                right_speed = calculate_motor_speed(&self.settings, turn.abs());
+                                None
                             };
 
-                            state.bearing = Some(b);
-                            state.waypoint = Some((wp_num, wp_bearing));
-                            state.turn = Some(turn);
-                            state.speed = (Motion::Speed(left_speed), Motion::Speed(right_speed));
-                            io.motors.set(state.speed.0, state.speed.1);
+                            match avoidance_action {
+                                Some(Action::AvoidingObstacleToLeft) => {
+                                    state.set_action(Action::AvoidingObstacleToLeft);
+                                    let s = (Motion::Speed(127), Motion::Speed(0));
+                                    io.motors.set(s.0, s.1);
+                                    state.speed = s;
+                                },
+                                Some(Action::AvoidingObstacleToRight) => {
+                                    state.set_action(Action::AvoidingObstacleToRight);
+                                    let s = (Motion::Speed(0), Motion::Speed(127));
+                                    io.motors.set(s.0, s.1);
+                                    state.speed = s;
+                                },
+                                Some(Action::EmergencyStop) => {
+                                    state.set_action(Action::EmergencyStop);
+                                    let s = (Motion::Brake(127), Motion::Brake(127));
+                                    io.motors.set(s.0, s.1);
+                                    state.speed = s;
+
+                                    // make sure the brakes get to stick for a while
+                                    thread::sleep(Duration::from_millis(100))
+                                },
+                                None => {
+                                    // continue with navigation towards waypoint
+                                    state.set_action(Action::Navigating { waypoint: wp_num });
+                                    let wp_bearing = loc.calc_bearing_to(&wp) as f32;
+                                    let turn = calc_bearing_diff(b, wp_bearing);
+                                    let mut left_speed = self.settings.max_speed;
+                                    let mut right_speed = self.settings.max_speed;
+
+                                    if turn < 0_f32 {
+                                        // turn left by reducing speed of left motor
+                                        left_speed = calculate_motor_speed(&self.settings, turn.abs());
+                                    } else {
+                                        // turn right by reducing speed of right motor
+                                        right_speed = calculate_motor_speed(&self.settings, turn.abs());
+                                    };
+
+                                    state.bearing = Some(b);
+                                    state.waypoint = Some((wp_num, wp_bearing));
+                                    state.turn = Some(turn);
+                                    state.speed = (Motion::Speed(left_speed), Motion::Speed(right_speed));
+                                    io.motors.set(state.speed.0, state.speed.1);
+                                }
+                            }
                         }
                     }
                 }
@@ -330,33 +370,48 @@ impl AVC {
         }
     }
 
-    fn check_for_obstacles(&self, state: &mut State, o: &Octasonic) -> Option<Action> {
+    /// replace the shared state ... using a block here to limit the scope of the mutex
+    fn update_shared_state(&self, state: &State, nav_state: &Arc<Mutex<Box<State>>>) -> bool {
+        let mut x = nav_state.lock().unwrap();
+        match x.action {
+            Action::Aborted => {
+                println!("Aborting navigation to waypoint {}", wp_num);
+                return false;
+            }
+            _ => {}
+        };
+        *x = Box::new(state.clone());
+        true
+    }
 
+    fn check_for_obstacles(&self, state: &mut State, o: &Octasonic) -> (u8,u8,u8) {
         for i in 0..3 {
             state.usonic[i] = o.get_sensor_reading(i as u8);
         }
-
-        let fl = state.usonic[2];
-        let ff = state.usonic[1];
-        let fr = state.usonic[0];
-
-        if ff < self.settings.obstacle_avoidance_distance {
-            if fl < self.settings.obstacle_avoidance_distance &&
-               fr < self.settings.obstacle_avoidance_distance {
-                Some(Action::EmergencyStop)
-            } else if fl < fr {
-                Some(Action::AvoidingObstacleToLeft)
-            } else {
-                Some(Action::AvoidingObstacleToRight)
-            }
-        } else if fl < self.settings.obstacle_avoidance_distance {
-            Some(Action::AvoidingObstacleToLeft)
-        } else if fr < self.settings.obstacle_avoidance_distance {
-            Some(Action::AvoidingObstacleToRight)
-        } else {
-            None
-        }
+        (state.usonic[2], state.usonic[1], state.usonic[0])
     }
+
+//        let fl = state.usonic[2];
+//        let ff = state.usonic[1];
+//        let fr = state.usonic[0];
+//
+//        if ff < self.settings.obstacle_avoidance_distance {
+//            if fl < self.settings.obstacle_avoidance_distance &&
+//               fr < self.settings.obstacle_avoidance_distance {
+//                Some(Action::EmergencyStop)
+//            } else if fl < fr {
+//                Some(Action::AvoidingObstacleToLeft)
+//            } else {
+//                Some(Action::AvoidingObstacleToRight)
+//            }
+//        } else if fl < self.settings.obstacle_avoidance_distance {
+//            Some(Action::AvoidingObstacleToLeft)
+//        } else if fr < self.settings.obstacle_avoidance_distance {
+//            Some(Action::AvoidingObstacleToRight)
+//        } else {
+//            None
+//        }
+//    }
 }
 
 
