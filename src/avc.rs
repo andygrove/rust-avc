@@ -6,7 +6,7 @@ use super::compass::*;
 use super::gps::*;
 use super::motors::*;
 use super::Config;
-
+use super::switch::*;
 use super::octasonic::*;
 
 use chrono::UTC;
@@ -107,6 +107,8 @@ impl AVC {
 
         let mut qik = Qik::new(String::from(self.conf.qik_device), 0);
 
+        let switch = Switch::new(17);
+
         let mut io = IO {
             gps: GPS::new(self.conf.gps_device),
             imu: Compass::new(self.conf.imu_device),
@@ -115,6 +117,7 @@ impl AVC {
 
         io.gps.start_thread();
         io.imu.start_thread();
+        switch.start_thread();
 
         // sharing state with a Mutex rather than using channels due to the producer and consumer
         // operating at such different rates and the producer only needing the latest state 24
@@ -169,11 +172,25 @@ impl AVC {
         if n != m {
             panic!("Warning: failed to set sensor count! {} != {}", m, n);
         }
+        
+	let mut state = State::new();
 
-        let mut state = State::new();
+        // wait for start switch
+        println!("Waiting for START switch...");
+        loop {
+          match switch.get() {
+            Some(true) => break,
+            _ => {}
+          }
+          thread::sleep(Duration::from_millis(10));
+        }
+        println!("Detected START switch!");
+
+        state.set_action(Action::Navigating { waypoint: 1 });
+
         let nav_state = self.shared_state.clone();
         for (i, waypoint) in self.settings.waypoints.iter().enumerate() {
-            if !self.navigate_to_waypoint(i+1, &waypoint, &mut io, &mut state, &nav_state, &o) {
+            if !self.navigate_to_waypoint(i+1, &waypoint, &mut io, &mut state, &nav_state, &o, &switch) {
                 break;
             }
         }
@@ -190,9 +207,17 @@ impl AVC {
     fn navigate_to_waypoint(&self, wp_num: usize, wp: &Location, io: &mut IO,
                             state: &mut State,
                             nav_state: &Arc<Mutex<Box<State>>>,
-                            o: &Octasonic
+                            o: &Octasonic, switch: &Switch
     ) -> bool {
         loop {
+
+            match switch.get() {
+              Some(false) => {
+                println!("Aborting due to kill switch");
+                return false;
+              },
+              _ => {}
+            }
 
             // replace the shared state ... using a block here to limit the scope of the mutex
             {

@@ -1,6 +1,3 @@
-extern crate hyper;
-extern crate iron;
-extern crate urlencoded;
 extern crate getopts;
 extern crate chrono;
 extern crate navigation;
@@ -13,11 +10,6 @@ use getopts::Options;
 use chrono::UTC;
 use navigation::*;
 use qik::*;
-use iron::prelude::*;
-use iron::status;
-use urlencoded::UrlEncodedQuery;
-use hyper::header::{ContentType};
-use hyper::mime::{Mime, TopLevel, SubLevel};
 use yaml_rust::{YamlLoader, Yaml};
 
 use std::env;
@@ -90,7 +82,10 @@ fn main() {
     else if matches.opt_present("w") { test_ultrasonic_with_motors(&conf); }
     else if matches.opt_present("c") { capture_gps(&conf); }
     else if matches.opt_present("a") {
-        let filename = matches.opt_str("f").unwrap();
+        let filename = match matches.opt_str("f") {
+            Some(f) => f,
+            None => panic!("missing --filename argument")
+        };
         run_avc(conf, &filename);
     }
     else { panic!("missing cmd line argument .. try --help"); }
@@ -124,139 +119,7 @@ fn run_avc(conf: Config, filename: &str) {
     };
 
     let avc = AVC::new(conf, settings);
-
-    let start_state = avc.get_shared_state();
-    let web_state = avc.get_shared_state();
-
-    let _ = thread::spawn(move || {
-
-        // wait for the user to hit the start button
-        println!("Waiting for start command");
-        loop {
-            {
-                let state = start_state.lock().unwrap();
-                match &state.action {
-                    &   Action::WaitingForStartCommand => {},
-                    _ => break
-                };
-            }
-            thread::sleep(Duration::from_millis(10));
-        }
-
-        // run!
-        avc.run();
-
-    });
-
-    Iron::new(move |req: &mut Request| {
-
-        println!("URL: {}", req.url);
-
-//        let mut headers = Headers::new();
-//        headers.set(
-//            ContentType(Mime(TopLevel::Text, SubLevel::Html, vec![]))
-//        );
-
-        let css = ".start_button {\
-                    background-color: green;\
-                    border: none;\
-                    color: white;\
-                    padding: 15px 32px;\
-                    text-align: center;\
-                    text-decoration: none;\
-                    display: inline-block;\
-                    font-size: 48px;\
-                }\
-                \
-                .stop_button {\
-                    background-color: red;\
-                    border: none;\
-                    color: white;\
-                    padding: 15px 32px;\
-                    text-align: center;\
-                    text-decoration: none;\
-                    display: inline-block;\
-                    font-size: 48px;\
-                }";
-
-        let start_page = format!("<html>
-                            <head><style>{}</style></head><body>
-                            <form action=\"/\">\
-                            <input type=\"hidden\" name=\"action\" value=\"start\">\
-                            <input type=\"submit\" value=\"Start!\" class=\"start_button\">\
-                            </form></body></html>", css);
-
-        let stop_page = format!("<html>
-                            <head><style>{}</style></head><body>
-                            <form action=\"/\">\
-                            <input type=\"hidden\" name=\"action\" value=\"stop\">\
-                            <input type=\"submit\" value=\"Stop!\" class=\"stop_button\">\
-                            </form>
-                            <a href=\"/\">HOME</a>\
-                            </body></html>", css);
-
-        let restart_page = format!("<html>
-                            <head><style>{}</style></head><body>\
-                            <h1>Stopped! You will need to restart the cmd-line app before starting again!</h1>\
-                            <form action=\"/\">\
-                            <input type=\"hidden\" name=\"action\" value=\"start\">\
-                            <input type=\"submit\" value=\"Start!\" class=\"start_button\">\
-                            </form></body></html>", css);
-
-        let invalid_action = format!("<html>
-                            <head><style>{}</style></head><body>\
-                            <h1>Invalid action!</h1>\
-                            <a href=\"/\">HOME</a>\
-                            </body></html>", css);
-
-        match req.get_ref::<UrlEncodedQuery>() {
-            Ok(ref hashmap) => {
-                match hashmap.get("action") {
-                    Some(ref a) => {
-                        match a[0].as_ref() {
-                            "start" => {
-                                {
-                                    let mut state = web_state.lock().unwrap();
-                                    state.set_action(Action::Navigating { waypoint: 1 });
-                                }
-                                let mut r = Response::with((status::Ok, stop_page));
-                                r.headers.set(ContentType(Mime(TopLevel::Text, SubLevel::Html, vec![])));
-                                Ok(r)
-                            },
-                            "stop" => {
-                                {
-                                    let mut state = web_state.lock().unwrap();
-                                    state.set_action(Action::Aborted);
-                                }
-                                let mut r = Response::with((status::Ok, restart_page));
-                                r.headers.set(ContentType(Mime(TopLevel::Text, SubLevel::Html, vec![])));
-                                Ok(r)
-                            },
-                            _ => {
-                                let mut r = Response::with((status::Ok, invalid_action));
-                                r.headers.set(ContentType(Mime(TopLevel::Text, SubLevel::Html, vec![])));
-                                Ok(r)
-                            }
-                        }
-                    },
-                    None => {
-                        let mut r = Response::with((status::Ok, start_page));
-                        r.headers.set(ContentType(Mime(TopLevel::Text, SubLevel::Html, vec![])));
-                        Ok(r)
-                    }
-                }
-
-            },
-            Err(ref e) => {
-                println!("Error: {:?}", e);
-                let mut r = Response::with((status::Ok, start_page));
-                r.headers.set(ContentType(Mime(TopLevel::Text, SubLevel::Html, vec![])));
-                Ok(r)
-            }
-        }
-
-    }).http("0.0.0.0:8080").unwrap();
-
+    avc.run();
 }
 
 fn capture_gps(conf: &Config) {
