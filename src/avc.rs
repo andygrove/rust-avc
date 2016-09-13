@@ -18,11 +18,6 @@ use navigation::*;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
-use std::sync::atomic::{ATOMIC_BOOL_INIT, AtomicBool, Ordering};
-
-use self::graceful::SignalGuard;
-
-static STOP: AtomicBool = ATOMIC_BOOL_INIT;
 
 // NOTE: public fields are bad practice ... will fix later
 pub struct Settings {
@@ -281,31 +276,19 @@ impl AVC {
                                 state.usonic[i] = o.get_sensor_reading(i as u8);
                             }
 
-                            let avoidance_action = self.check_obstacles(&state);
-
-                            match avoidance_action {
+                            match check_obstacles(&state) {
                                 Some(Action::AvoidingObstacleToLeft) => {
-                                    state.set_action(Action::AvoidingObstacleToLeft);
-                                    let s = (Motion::Speed(127), Motion::Speed(0));
-                                    io.motors.set(s.0, s.1);
-                                    state.speed = s;
-                                }
+                                    state.speed =
+                                        (Motion::Speed(self.settings.max_speed), Motion::Speed(0));
+                                },
                                 Some(Action::AvoidingObstacleToRight) => {
-                                    state.set_action(Action::AvoidingObstacleToRight);
-                                    let s = (Motion::Speed(0), Motion::Speed(127));
-                                    io.motors.set(s.0, s.1);
-                                    state.speed = s;
-                                }
+                                    state.speed =
+                                        (Motion::Speed(Motion::Speed(0), self.settings.max_speed));
+                                },
                                 Some(Action::EmergencyStop) => {
-                                    state.set_action(Action::EmergencyStop);
-                                    let s = (Motion::Brake(127), Motion::Brake(127));
-                                    io.motors.set(s.0, s.1);
-                                    state.speed = s;
-
-                                    // make sure the brakes get to stick for a while
-                                    thread::sleep(Duration::from_millis(100))
-                                }
-                                _ => {
+                                    state.speed = (Motion::Brake(127), Motion::Speed(127));
+                                },
+                                None => {
                                     // continue with navigation towards waypoint
                                     state.set_action(Action::Navigating { waypoint: wp_num });
                                     let wp_bearing = loc.calc_bearing_to(&wp) as f32;
@@ -321,16 +304,18 @@ impl AVC {
                                         // turn right by reducing speed of right motor
                                         right_speed = calculate_motor_speed(&self.settings,
                                                                             turn.abs());
-                                    };
+                                    }
 
                                     state.bearing = Some(b);
                                     state.waypoint = Some((wp_num, wp_bearing));
                                     state.turn = Some(turn);
                                     state.speed = (Motion::Speed(left_speed),
                                                    Motion::Speed(right_speed));
-                                    io.motors.set(state.speed.0, state.speed.1);
                                 }
                             }
+
+                            // set motor speeds
+                            io.motors.set(state.speed.0, state.speed.1);
                         }
                     }
                 }
@@ -338,6 +323,7 @@ impl AVC {
         }
     }
 
+    /// check sensors and determine if we need to take some action
     fn check_obstacles(&self, state: &State) -> Option<Action> {
         let (fl, ff, fr) = (state.usonic[2], state.usonic[1], state.usonic[0]);
 
@@ -361,7 +347,7 @@ impl AVC {
                 // turn in direction we were navigating to
                 match state.turn {
                     Some(n) => {
-                        if state.turn.unwrap() < 0.0 {
+                        if n < 0.0 {
                             Some(Action::AvoidingObstacleToRight)
                         } else {
                             Some(Action::AvoidingObstacleToLeft)
@@ -392,12 +378,6 @@ impl AVC {
         *x = Box::new(state.clone());
         true
     }
-    // fn check_for_obstacles(&self, state: &mut State, o: &Octasonic) -> (u8,u8,u8) {
-    // for i in 0..3 {
-    // state.usonic[i] = o.get_sensor_reading(i as u8);
-    // }
-    // (state.usonic[2], state.usonic[1], state.usonic[0])
-    // }
 }
 
 
