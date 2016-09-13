@@ -276,17 +276,20 @@ impl AVC {
                                 state.usonic[i] = o.get_sensor_reading(i as u8);
                             }
 
-                            match check_obstacles(&state) {
-                                Some(Action::AvoidingObstacleToLeft) => {
-                                    state.speed =
-                                        (Motion::Speed(self.settings.max_speed), Motion::Speed(0));
-                                },
-                                Some(Action::AvoidingObstacleToRight) => {
-                                    state.speed =
-                                        (Motion::Speed(Motion::Speed(0), self.settings.max_speed));
-                                },
-                                Some(Action::EmergencyStop) => {
-                                    state.speed = (Motion::Brake(127), Motion::Speed(127));
+                            match self.check_obstacles(&state) {
+                                Some(avoid) => {
+                                    state.speed = match avoid {
+                                        Action::AvoidingObstacleToLeft => 
+                                            (Motion::Speed(self.settings.max_speed), Motion::Speed(0)),
+                                        Action::AvoidingObstacleToRight =>
+                                            (Motion::Speed(0), Motion::Speed(self.settings.max_speed)),
+                                        Action::EmergencyStop =>
+                                            (Motion::Brake(127), Motion::Speed(127)),
+                                        _ => {
+                                            println!("Invalid avoidance action");
+                                            (Motion::Brake(127), Motion::Speed(127))
+                                        }
+                                    };
                                 },
                                 None => {
                                     // continue with navigation towards waypoint
