@@ -155,7 +155,7 @@ impl AVC {
             println!("Video thread terminated");
         });
 
-        let o = Octasonic::new().unwrap();
+        let o = Octasonic::new(3).unwrap();
 
         let n = 3; // sensor count
         o.set_sensor_count(n);
