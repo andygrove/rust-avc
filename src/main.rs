@@ -1,15 +1,13 @@
+extern crate sysfs_gpio;
 extern crate getopts;
 extern crate chrono;
 extern crate navigation;
 extern crate qik;
 extern crate yaml_rust;
-extern crate sysfs_gpio;
 
-use sysfs_gpio::{Direction, Pin};
 use getopts::Options;
 use chrono::UTC;
 use navigation::{Location};
-use qik::{Qik, QikError, Motor};
 use yaml_rust::{YamlLoader, Yaml};
 
 use std::env;
@@ -31,6 +29,7 @@ use video::*;
 use avc::*;
 use switch::*;
 use motors::*;
+use qik::*;
 
 mod octasonic;
 use octasonic::*;
@@ -189,6 +188,7 @@ fn test_imu(conf: &Config) {
     }
 }
 
+#[allow(dead_code)]
 fn test_qik(conf: &Config) {
     println!("Testing motors");
     use qik::ConfigParam::*;

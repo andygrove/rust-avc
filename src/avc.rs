@@ -97,10 +97,6 @@ impl AVC {
         }
     }
 
-    pub fn get_shared_state(&self) -> Arc<Mutex<Box<State>>> {
-        self.shared_state.clone()
-    }
-
     pub fn run(&self) {
 
         let mut qik = Qik::new(String::from(self.conf.qik_device), 18).unwrap();
