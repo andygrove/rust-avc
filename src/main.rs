@@ -9,7 +9,7 @@ use sysfs_gpio::{Direction, Pin};
 use getopts::Options;
 use chrono::UTC;
 use navigation::{Location};
-use qik::*;
+use qik::{Qik, QikError, Motor};
 use yaml_rust::{YamlLoader, Yaml};
 
 use std::env;
@@ -194,27 +194,27 @@ fn test_imu(conf: &Config) {
 fn test_qik(conf: &Config) {
     println!("Testing motors");
     use qik::ConfigParam::*;
-    let mut qik = qik::Qik::new(String::from(conf.qik_device), 18);
-    qik.init();
-    println!("Firmware version: {}", qik.get_firmware_version());
+    let mut qik = qik::Qik::new(String::from(conf.qik_device), 18).unwrap();
+    qik.init().unwrap();
+    println!("Firmware version: {}", qik.get_firmware_version().unwrap());
     println!("MOTOR_M0_ACCELERATION : {}",
-             qik.get_config(MOTOR_M0_ACCELERATION));
+             qik.get_config(MOTOR_M0_ACCELERATION).unwrap());
     println!("MOTOR_M1_ACCELERATION : {}",
-             qik.get_config(MOTOR_M1_ACCELERATION));
+             qik.get_config(MOTOR_M1_ACCELERATION).unwrap());
     for i in 0..127 {
-        qik.set_speed(Motor::M0, i);
-        qik.set_speed(Motor::M1, i);
+        qik.set_speed(Motor::M0, i).unwrap();
+        qik.set_speed(Motor::M1, i).unwrap();
         std::thread::sleep(Duration::from_millis(30));
     }
-    qik.set_speed(Motor::M0, 0);
-    qik.set_speed(Motor::M1, 0);
+    qik.set_speed(Motor::M0, 0).unwrap();
+    qik.set_speed(Motor::M1, 0).unwrap();
 }
 
 fn test_motors(conf: &Config) {
     println!("Testing motors");
     use qik::ConfigParam::*;
-    let mut qik = qik::Qik::new(String::from(conf.qik_device), 18);
-    qik.init();
+    let mut qik = qik::Qik::new(String::from(conf.qik_device), 18).unwrap();
+    qik.init().unwrap();
 
 
     let mut motors = Motors::new(&mut qik);
@@ -323,8 +323,8 @@ fn test_ultrasonic_with_motors(conf: &Config) {
     }
 
     use qik::ConfigParam::*;
-    let mut qik = qik::Qik::new(String::from(conf.qik_device), 18);
-    qik.init();
+    let mut qik = qik::Qik::new(String::from(conf.qik_device), 18).unwrap();
+    qik.init().unwrap();
 
     let mut counter = 0;
     let mut b = true;
@@ -340,11 +340,11 @@ fn test_ultrasonic_with_motors(conf: &Config) {
             counter = 0;
             b = !b;
             if b {
-                qik.set_speed(Motor::M0, 80);
-                qik.set_speed(Motor::M1, 80);
+                qik.set_speed(Motor::M0, 80).unwrap();
+                qik.set_speed(Motor::M1, 80).unwrap();
             } else {
-                qik.set_speed(Motor::M0, 0);
-                qik.set_speed(Motor::M1, 0);
+                qik.set_speed(Motor::M0, 0).unwrap();
+                qik.set_speed(Motor::M1, 0).unwrap();
             }
         }
     }

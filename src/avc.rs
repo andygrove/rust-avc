@@ -103,8 +103,8 @@ impl AVC {
 
     pub fn run(&self) {
 
-        let mut qik = Qik::new(String::from(self.conf.qik_device), 18);
-        qik.init();
+        let mut qik = Qik::new(String::from(self.conf.qik_device), 18).unwrap();
+        qik.init().unwrap();
 
         let switch = Switch::new(17);
 
