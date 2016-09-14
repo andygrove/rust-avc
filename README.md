@@ -81,7 +81,12 @@ curl -sSf https://static.rust-lang.org/rustup.sh | sh -s -- --channel=nightly
 
 ## Cross compiling
 
-```cargo build --target=arm-unknown-linux-gnueabihf```
+NOTE: I don't have this working yet.
+
+```
+rustup target add arm-unknown-linux-gnueabihf
+cargo build --target=arm-unknown-linux-gnueabihf
+```
 
 ## Connecting to the pi via ethernet
 
@@ -91,7 +96,7 @@ Use a regular ethernet cable to connect a laptop to the Pi (you'll need a USB-Et
 
 The default password is 'raspberry'.
 
-For testing video, this is requred:
+For testing video, this is required:
 
 ```
 export DISPLAY=":0.0"
