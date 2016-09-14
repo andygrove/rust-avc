@@ -15,8 +15,6 @@ use yaml_rust::{YamlLoader, Yaml};
 use std::env;
 use std::fs::{File, OpenOptions};
 use std::io::{Read, Write};
-use std::sync::mpsc::channel;
-use std::sync::mpsc::Receiver;
 use std::thread;
 use std::time::Duration;
 
@@ -184,7 +182,7 @@ fn test_gps(conf: &Config) {
 fn test_imu(conf: &Config) {
     println!("Testing IMU");
     let compass = Compass::new(conf.imu_device);
-    compass.start_thread();
+    compass.start_thread().unwrap();
     loop {
         println!("Compass: {:?}", compass.get());
         thread::sleep(Duration::from_millis(1000));
@@ -212,7 +210,6 @@ fn test_qik(conf: &Config) {
 
 fn test_motors(conf: &Config) {
     println!("Testing motors");
-    use qik::ConfigParam::*;
     let mut qik = qik::Qik::new(String::from(conf.qik_device), 18).unwrap();
     qik.init().unwrap();
 
@@ -231,7 +228,7 @@ fn test_video(conf: &Config) {
     gps.start_thread();
 
     let compass = Compass::new(conf.imu_device);
-    compass.start_thread();
+    compass.start_thread().unwrap();
 
     let video = Video::new(0);
 
@@ -302,7 +299,6 @@ fn test_ultrasonic() {
         panic!("Warning: failed to set sensor count! {} != {}", m, n);
     }
 
-    let mut b = true;
     loop {
         print!("Ultrasonic: ");
         for i in 0..n {
@@ -322,7 +318,6 @@ fn test_ultrasonic_with_motors(conf: &Config) {
         panic!("Warning: failed to set sensor count! {} != {}", m, n);
     }
 
-    use qik::ConfigParam::*;
     let mut qik = qik::Qik::new(String::from(conf.qik_device), 18).unwrap();
     qik.init().unwrap();
 
@@ -352,7 +347,7 @@ fn test_ultrasonic_with_motors(conf: &Config) {
 
 fn test_switch() {
     println!("Testing switch");
-    let mut s = Switch::new(17);
+    let s = Switch::new(17);
     s.start_thread();
     let mut state = s.get();
     loop {

@@ -30,24 +30,23 @@ impl Compass {
         }
     }
 
-    pub fn start_thread(&self) {
+    pub fn start_thread(&self) -> Result<(), serial::Error> {
 
         let f = self.filename.clone();
         let compass_bearing = self.bearing.clone();
 
-        let mut port = serial::open(f).unwrap();
+        let mut port = try!(serial::open(f));
 
-        port.reconfigure(&|settings| {
-                settings.set_baud_rate(serial::Baud57600).unwrap();
+        try!(port.reconfigure(&|settings| {
+                try!(settings.set_baud_rate(serial::Baud57600));
                 settings.set_char_size(serial::Bits8);
                 settings.set_parity(serial::ParityNone);
                 settings.set_stop_bits(serial::Stop1);
                 settings.set_flow_control(serial::FlowNone);
                 Ok(())
-            })
-            .unwrap();
+            }));
 
-        port.set_timeout(Duration::from_millis(5000)).unwrap();
+        try!(port.set_timeout(Duration::from_millis(5000)));
 
         // start thread to read from serial port
         let _ = thread::spawn(move || {
@@ -78,6 +77,8 @@ impl Compass {
 
             }
         });
+
+        Ok(())
     }
 
     pub fn get(&self) -> Option<f32> {

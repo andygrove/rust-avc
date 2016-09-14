@@ -115,7 +115,7 @@ impl AVC {
         };
 
         io.gps.start_thread();
-        io.imu.start_thread();
+        io.imu.start_thread().unwrap();
         switch.start_thread();
 
         // start the thread to write the video
@@ -501,6 +501,5 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
                     y,
                     format!("FL={}, FF={}, FR={}", s.usonic[2], s.usonic[1], s.usonic[0]),
                     &c);
-    y += line_height;
 
 }

@@ -2,7 +2,6 @@ extern crate spidev;
 use self::spidev::{Spidev, SpidevOptions, SpidevTransfer, SPI_MODE_0};
 
 pub struct Octasonic {
-    options: SpidevOptions,
     spi: Spidev,
 }
 
@@ -19,7 +18,6 @@ impl Octasonic {
 
         Octasonic {
             spi: spi,
-            options: options,
         }
     }
 

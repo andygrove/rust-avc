@@ -1,11 +1,9 @@
 extern crate sysfs_gpio;
 
 use sysfs_gpio::{Direction, Pin};
-use std::env;
 use std::thread;
 use std::thread::sleep;
 use std::sync::{Arc, Mutex};
-use std::ops::DerefMut;
 use std::time::Duration;
 
 #[derive(Debug)]
@@ -46,7 +44,7 @@ impl Switch {
                 };
 
                 let mut value = baseline;
-                for i in 0..9 {
+                for _ in 0..9 {
                     value = match input.get_value() {
                         Ok(n) => n,
                         _ => 123,
