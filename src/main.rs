@@ -291,7 +291,7 @@ fn test_video(conf: &Config) {
 }
 
 fn test_ultrasonic() {
-    let o = Octasonic::new();
+    let o = Octasonic::new().unwrap();
     let n = 3; // sensor count
     o.set_sensor_count(n);
     let m = o.get_sensor_count();
@@ -310,7 +310,7 @@ fn test_ultrasonic() {
 }
 
 fn test_ultrasonic_with_motors(conf: &Config) {
-    let o = Octasonic::new();
+    let o = Octasonic::new().unwrap();
     let n = 3; // sensor count
     o.set_sensor_count(n);
     let m = o.get_sensor_count();
