@@ -24,9 +24,15 @@ impl<'a> Motors<'a> {
     }
 
     fn _set(&mut self, m: Motor, n: Motion) {
-        match n {
-            Motion::Brake(n) => self.qik.set_brake(m, n).unwrap(),
-            Motion::Speed(n) => self.qik.set_speed(m, n).unwrap(),
+        let m = match n {
+            Motion::Brake(n) => self.qik.set_brake(m, n),
+            Motion::Speed(n) => self.qik.set_speed(m, n),
+        };
+        match m {
+            Ok(_) => {},
+            Err(_) => {
+                println!("Error changing motor speed");
+            }
         }
     }
 }
