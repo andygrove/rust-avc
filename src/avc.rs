@@ -25,6 +25,7 @@ pub struct Settings {
     pub differential_drive_coefficient: f32,
     pub waypoints: Vec<Location>,
     pub obstacle_avoidance_distance: u8,
+    pub usonic_sample_count: usize,
 }
 
 /// the various actions the vehicle can be performing
@@ -155,7 +156,7 @@ impl AVC {
             println!("Video thread terminated");
         });
 
-        let o = Octasonic::new(3).unwrap();
+        let mut o = Octasonic::new(3, self.settings.usonic_sample_count).unwrap();
 
         let n = 3; // sensor count
         o.set_sensor_count(n);
@@ -185,7 +186,7 @@ impl AVC {
                                           &mut io,
                                           &mut state,
                                           &nav_state,
-                                          &o,
+                                          &mut o,
                                           &switch) {
 
                 // set shared state to Aborted so the video thread finishes
@@ -219,7 +220,7 @@ impl AVC {
                             io: &mut IO,
                             state: &mut State,
                             nav_state: &Arc<Mutex<Box<State>>>,
-                            o: &Octasonic,
+                            o: &mut Octasonic,
                             switch: &Switch)
                             -> bool {
 

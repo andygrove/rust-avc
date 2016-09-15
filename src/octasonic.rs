@@ -11,7 +11,7 @@ pub struct Octasonic {
 impl Octasonic {
 
     /// Create an Octasonic struct for the specified sensor count
-    pub fn new(sensor_count: usize) -> Result<Self, Error> {
+    pub fn new(sensor_count: usize, sample_count: usize) -> Result<Self, Error> {
         let mut spi = try!(Spidev::open("/dev/spidev0.0"));
         let mut options = SpidevOptions::new();
 
@@ -32,14 +32,15 @@ impl Octasonic {
             values: v
         };
 
-        o.set_sensor_count(sensor_count as u8);
+        o.set_sensor_count(sample_count as u8);
 
         Ok(o)
     }
 
-    pub fn read(&mut self, n: u8) -> u8 {
+    /// get the averaged sensor reading
+    pub fn get_sensor_reading(&mut self, n: u8) -> u8 {
         // get the new reading
-        let x = self.get_sensor_reading(n);
+        let x = self._get_sensor_reading(n);
         // push the reading onto the history
         let mut v = &mut self.values[n as usize];
         v.remove(0);
@@ -57,7 +58,8 @@ impl Octasonic {
         self.transfer(0x00)
     }
 
-    pub fn get_sensor_reading(&self, n: u8) -> u8 {
+    /// get the raw sensor reading
+    fn _get_sensor_reading(&self, n: u8) -> u8 {
         let _ = self.transfer(0x30 | n);
         self.transfer(0x00)
     }

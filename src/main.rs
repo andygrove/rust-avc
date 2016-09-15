@@ -130,6 +130,7 @@ fn run_avc(conf: Config, filename: &str) {
             .as_i64()
             .unwrap() as u8,
         differential_drive_coefficient: 1_f32,
+        usonic_sample_count: 5,
         waypoints: course,
     };
 
@@ -291,7 +292,7 @@ fn test_video(conf: &Config) {
 }
 
 fn test_ultrasonic() {
-    let o = Octasonic::new(3).unwrap();
+    let mut o = Octasonic::new(3, 5).unwrap();
     let n = 3; // sensor count
     o.set_sensor_count(n);
     let m = o.get_sensor_count();
@@ -310,7 +311,7 @@ fn test_ultrasonic() {
 }
 
 fn test_ultrasonic_with_motors(conf: &Config) {
-    let o = Octasonic::new(3).unwrap();
+    let mut o = Octasonic::new(3, 5).unwrap();
     let n = 3; // sensor count
     o.set_sensor_count(n);
     let m = o.get_sensor_count();
