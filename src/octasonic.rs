@@ -46,11 +46,11 @@ impl Octasonic {
         v.remove(0);
         v.push(x);
         // calculate the average
-        let mut total = 0;
+        let mut total = 0_u32;
         for i in 0..v.len() {
-            total += v[i];
+            total += v[i] as u32;
         }
-        total / v.len() as u8
+        (total as u32 / v.len() as u32) as u8
     }
 
     pub fn get_sensor_count(&self) -> u8 {
