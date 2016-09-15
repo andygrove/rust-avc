@@ -53,6 +53,7 @@ impl Compass {
 
             let mut buf: Vec<char> = vec![];
             let mut read_buf = vec![0_u8; 128];
+            let mut last_bearing = 0.0;
 
             loop {
                 let n = port.read(&mut read_buf[..]).unwrap();
@@ -64,8 +65,11 @@ impl Compass {
                         let sentence = String::from(&buf[..]);
                         match sentence.parse::<f32>() {
                             Ok(n) => {
-                                // println!("bearing: {}", n);
-                                compass_bearing.lock().unwrap().set(n);
+                                // only update the shared state if the bearing actually changed
+                                if (last_bearing - n).abs() > 0.1 {
+                                    last_bearing = n;
+                                    compass_bearing.lock().unwrap().set(n);
+                                }
                             }
                             Err(e) => {
                                 println!("Failed to parse bearing '{}' due to {:?}", sentence, e)
