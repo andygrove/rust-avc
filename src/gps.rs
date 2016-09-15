@@ -11,14 +11,14 @@ use std::time::Duration;
 
 pub struct GPS {
     filename: &'static str,
-    location: Arc<Mutex<Location>>,
+    location: Arc<Mutex<Option<Location>>>,
 }
 
 impl GPS {
     pub fn new(f: &'static str) -> Self {
         GPS {
             filename: f,
-            location: Arc::new(Mutex::new(Location::new(0 as f64, 0 as f64))),
+            location: Arc::new(Mutex::new(None)),
         }
     }
 
@@ -45,8 +45,9 @@ impl GPS {
         let _ = thread::spawn(move || {
 
             let mut buf: Vec<char> = vec![];
-            let mut read_buf = vec![0_u8; 128];
-
+            let mut read_buf = vec![0_u8; 1024];
+            let mut last_lat = 0.0;
+            let mut last_lon = 0.0;
             loop {
                 let n = port.read(&mut read_buf[..]).unwrap();
                 for i in 0..n {
@@ -65,17 +66,22 @@ impl GPS {
                                 let lon = parts[3];     // ddmm.mmmm
                                 let lon_ew = parts[4];  // E or W
                                 let _ = parts[5];    // hhmmss.sss
-                                let _ = parts[6];  // A=valid, V=not valid
-
+                                let av = parts[6];  // A=valid, V=not valid
                                 // println!("{} {}, {} {}", lat, lat_ns, lon, lon_ew);
 
-                                match Location::parse_nmea(lat, lat_ns, lon, lon_ew) {
-                                    Ok(x) => {
-                                        // TODO: only update the shared state if the co-ords changed
-                                        let mut loc = gps_location.lock().unwrap();
-                                        loc.set(x.lat, x.lon);
-                                    },
-                                    Err(e) => println!("Failed to parse GPS: {}", e)
+                                if av == "A" {
+                                    match Location::parse_nmea(lat, lat_ns, lon, lon_ew) {
+                                        Ok(x) => {
+                                            if (last_lat-x.lat).abs() > 0.000001
+                                            || (last_lon-x.lon).abs() > 0.000001 {
+                                                let mut loc = gps_location.lock().unwrap();
+                                                *loc = Some(Location::new(x.lat, x.lon));
+                                                last_lat = x.lat;
+                                                last_lon = x.lon;
+                                            }
+                                        },
+                                        Err(e) => println!("Failed to parse GPS: {}", e)
+                                    }
                                 }
                             }
                             _ => {}
@@ -86,23 +92,15 @@ impl GPS {
                         buf.push(ch);
                     }
                 }
-
-
-
             }
         });
     }
 
     pub fn get(&self) -> Option<Location> {
         let loc = self.location.lock().unwrap();
-        // nasty hack that won't work close to the equator
-        if loc.lat < 0.1 && loc.lat > -0.1 {
-            None
-        } else {
-            Some(Location {
-                lat: loc.lat,
-                lon: loc.lon,
-            })
+        match *loc {
+            Some(Location { lat, lon }) => Some(Location::new(lat,lon)),
+            None => None
         }
     }
 }
