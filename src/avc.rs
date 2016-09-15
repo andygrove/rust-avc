@@ -266,6 +266,7 @@ impl AVC {
                             state.speed = s;
                         }
                         Some(b) => {
+                            state.bearing = Some(b);
 
                             // get readings from ultrasonic sensors
                             for i in 0..3 {
@@ -274,16 +275,24 @@ impl AVC {
 
                             match self.check_obstacles(&state) {
                                 Some(avoid) => {
-                                    state.speed = match avoid {
-                                        Action::AvoidingObstacleToLeft => 
-                                            (Motion::Speed(self.settings.max_speed), Motion::Speed(0)),
-                                        Action::AvoidingObstacleToRight =>
-                                            (Motion::Speed(0), Motion::Speed(self.settings.max_speed)),
-                                        Action::EmergencyStop =>
-                                            (Motion::Brake(127), Motion::Speed(127)),
+                                    match avoid {
+                                        Action::AvoidingObstacleToLeft => {
+                                            state.set_action(avoid);
+                                            state.turn = None;
+                                            state.speed = (Motion::Speed(self.settings.max_speed), Motion::Speed(0));
+                                        },
+                                        Action::AvoidingObstacleToRight => {
+                                            state.set_action(avoid);
+                                            state.turn = None;
+                                            state.speed = (Motion::Speed(0), Motion::Speed(self.settings.max_speed));
+                                        },
+                                        Action::EmergencyStop => {
+                                            state.set_action(avoid);
+                                            state.turn = None;
+                                            state.speed = (Motion::Brake(127), Motion::Brake(127));
+                                        },
                                         _ => {
                                             println!("Invalid avoidance action");
-                                            (Motion::Brake(127), Motion::Speed(127))
                                         }
                                     };
                                 },
@@ -305,7 +314,6 @@ impl AVC {
                                                                             turn.abs());
                                     }
 
-                                    state.bearing = Some(b);
                                     state.waypoint = Some((wp_num, wp_bearing));
                                     state.turn = Some(turn);
                                     state.speed = (Motion::Speed(left_speed),
