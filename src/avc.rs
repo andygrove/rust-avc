@@ -465,7 +465,7 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
                     if s.loc.is_some() && s.next_waypoint.is_some() {
                         let gps = s.loc.unwrap();
                         let wp = s.next_waypoint.unwrap().1;
-                        format!("DIFF: {:.*}, {:.*}", 6, gps.0-wp.0, 6, gps.1-wp.1)
+                        format!("DIFF: {:.*}, {:.*}", 6, wp.0-gps.0, 6, wp.1-gps.1)
                     } else {
                         format!("DIFF: N/A")
                     },
