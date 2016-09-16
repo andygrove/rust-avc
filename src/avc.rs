@@ -431,6 +431,8 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
     let line_height = 20;
 
     let c = Color::new(200, 200, 200, 24); // r, g, b, alpha
+    let green = Color::new(0, 200, 0, 24); // r, g, b, alpha
+    let red = Color::new(200, 0, 0, 24); // r, g, b, alpha
     let background = Color::new(50, 50, 50, 24); // r, g, b, alpha
 
     video.fill_rect(top, 20, 600, top + line_height * 5, &background);
@@ -534,7 +536,14 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
     y += line_height;
 
     // action
-    video.draw_text(x2, y, format!("{:?}", s.action), &c);
+    let action_color = match s.action {
+        Action::WaitingForStartCommand => green,
+        Action::Navigating { .. } => green,
+        Action::ReachedWaypoint { .. } => green,
+        _ => red
+    };
+
+    video.draw_text(x2, y, format!("{:?}", s.action), &action_color);
 
 
 }
