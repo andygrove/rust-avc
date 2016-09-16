@@ -18,7 +18,6 @@ impl<'a> Motors<'a> {
     }
 
     pub fn set(&mut self, left: Motion, right: Motion) {
-        println!("Setting motor speeds to: {:?}, {:?}", left, right);
         self._set(Motor::M0, left);
         self._set(Motor::M1, right);
     }
