@@ -11,4 +11,5 @@ RUN curl https://sh.rustup.rs > sh.rustup.rs \
     && rustup default nightly-2016-09-05 \
     && rustup target add arm-unknown-linux-gnueabihf
 
-VOLUME /avc
+VOLUME /rust-avc
+VOLUME /rust-qik

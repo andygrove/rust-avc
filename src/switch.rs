@@ -32,7 +32,11 @@ impl Switch {
         thread::spawn(move || {
 
             // assume pin was exported before this code is called
-            input.set_direction(Direction::In).unwrap();
+            if input.is_exported() {
+                input.set_direction(Direction::In).unwrap();
+            } else {
+                input.with_exported(|| input.set_direction(Direction::In).unwrap());
+            }
 
             // loop forever
             loop {
