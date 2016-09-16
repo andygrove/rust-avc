@@ -129,7 +129,7 @@ fn run_avc(conf: Config, filename: &str) {
             .unwrap()
             .as_i64()
             .unwrap() as u8,
-        differential_drive_coefficient: 1_f32,
+        differential_drive_coefficient: 2_f32,
         usonic_sample_count: 5,
         waypoints: course,
     };

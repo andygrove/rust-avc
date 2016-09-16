@@ -72,8 +72,8 @@ impl GPS {
                                 if av == "A" {
                                     match Location::parse_nmea(lat, lat_ns, lon, lon_ew) {
                                         Ok(x) => {
-                                            if (last_lat-x.lat).abs() > 0.000001
-                                            || (last_lon-x.lon).abs() > 0.000001 {
+                                            if (last_lat-x.lat).abs() > 0.0000001
+                                            || (last_lon-x.lon).abs() > 0.0000001 {
                                                 let mut loc = gps_location.lock().unwrap();
                                                 *loc = Some(Location::new(x.lat, x.lon));
                                                 last_lat = x.lat;
