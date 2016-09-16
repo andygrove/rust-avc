@@ -429,7 +429,6 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
     let x2 = 350;
     let top = 20;
     let line_height = 20;
-    let mut y = top + line_height;
 
     let c = Color::new(200, 200, 200, 24); // r, g, b, alpha
     let background = Color::new(50, 50, 50, 24); // r, g, b, alpha
@@ -437,6 +436,7 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
     video.fill_rect(top, 20, 600, top + line_height * 5, &background);
 
     // COLUMN 1
+    let mut y = top + line_height;
 
     // Line 1 - GPS
     video.draw_text(x1,
@@ -490,10 +490,9 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
                         Some(b) => format!("WP: {:.*}", 1, b),
                     },
                     &c);
-    y = top + line_height;
 
-    // Line 6 - how much do we need to turn?
-    video.draw_text(x1,
+    // Line 5 (still) - how much do we need to turn?
+    video.draw_text(x1 + 100,
                     y,
                     match s.turn {
                         None => format!("Turn: N/A"),
@@ -502,7 +501,6 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
                     &c);
 
     // COLUMN 2
-
     y = top + line_height;
 
     // Date
