@@ -536,14 +536,6 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
     y += line_height;
 
     // action
-    let action_color = match s.action {
-        Action::WaitingForStartCommand => green,
-        Action::Navigating { .. } => green,
-        Action::ReachedWaypoint { .. } => green,
-        _ => red
-    };
-
-    video.draw_text(x2, y, format!("{:?}", s.action), &action_color);
-
+    video.draw_text(x2, y, format!("{:?}", s.action), &c);
 
 }
