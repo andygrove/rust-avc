@@ -48,7 +48,9 @@ pub enum Action {
 pub struct State {
     loc: Option<(f64, f64)>,
     bearing: Option<f32>,
-    waypoint: Option<(usize, f32)>, // waypoint number and bearing
+    /// Waypoint number and location (lat, lon)
+    next_waypoint: Option<(usize, (f64,f64))>,
+    waypoint_bearing: Option<f32>,
     turn: Option<f32>,
     pub action: Action,
     speed: (Motion, Motion),
@@ -60,7 +62,8 @@ impl State {
         State {
             loc: None,
             bearing: None,
-            waypoint: None,
+            next_waypoint: None,
+            waypoint_bearing: None,
             turn: None,
             action: Action::WaitingForStartCommand,
             speed: (Motion::Speed(0), Motion::Speed(0)),
@@ -226,6 +229,9 @@ impl AVC {
 
         println!("navigate_to_waypoint({})", wp_num);
 
+        // update next_waypoint
+        state.next_waypoint = Some((wp_num, (wp.lat, wp.lon)));
+
         loop {
 
             // check for kill switch
@@ -241,7 +247,7 @@ impl AVC {
             }
 
             // performing this logic 100 times per second should be enough
-            thread::sleep(Duration::from_millis(10));
+//            thread::sleep(Duration::from_millis(10));
 
             match io.gps.get() {
                 None => {
@@ -315,7 +321,7 @@ impl AVC {
                                                                             turn.abs());
                                     }
 
-                                    state.waypoint = Some((wp_num, wp_bearing));
+                                    state.waypoint_bearing = Some(wp_bearing);
                                     state.turn = Some(turn);
                                     state.speed = (Motion::Speed(left_speed),
                                                    Motion::Speed(right_speed));
@@ -390,7 +396,8 @@ impl AVC {
 
 
 fn close_enough(a: &Location, b: &Location) -> bool {
-    (a.lat - b.lat).abs() < 0.000025 && (a.lon - b.lon).abs() < 0.000025
+    let accurancy = 0.000025;
+    (a.lat - b.lat).abs() < accurancy && (a.lon - b.lon).abs() < accurancy
 }
 
 fn calc_bearing_diff(current_bearing: f32, wp_bearing: f32) -> f32 {
@@ -431,7 +438,7 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
 
     // COLUMN 1
 
-    // GPS
+    // Line 1 - GPS
     video.draw_text(x1,
                     y,
                     match s.loc {
@@ -441,7 +448,31 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
                     &c);
     y += line_height;
 
-    // compass
+    // Line 2 - next waypoint number
+    video.draw_text(x1,
+                    y,
+                    match s.next_waypoint {
+                        None => format!("WP ?: N/A"),
+                        Some((n, (lat, lon))) => format!("WP {}: {:.*}, {:.*}", n, 6, lat, 6, lon),
+                    },
+                    &c);
+    y += line_height;
+
+
+    // Line 3 - difference in GPS co-ordinates (are we there yet?)
+    video.draw_text(x1,
+                    y,
+                    if s.loc.is_some() && s.next_waypoint.is_some() {
+                        let gps = s.loc.unwrap();
+                        let wp = s.next_waypoint.unwrap().1;
+                        format!("DIFF: {:.*}, {:.*}", 6, gps.0-wp.0, 6, gps.1-wp.1)
+                    } else {
+                        format!("DIFF: N/A")
+                    },
+                    &c);
+    y += line_height;
+
+    // Line 4 - compass
     video.draw_text(x1,
                     y,
                     match s.bearing {
@@ -451,17 +482,17 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
                     &c);
     y += line_height;
 
-    // next waypoint number
+    // Line 5 - what is bearing for next WP?
     video.draw_text(x1,
                     y,
-                    match s.waypoint {
-                        None => format!("Waypoint: N/A"),
-                        Some((n, b)) => format!("Waypoint: {} @ {:.*}", n, 1, b),
+                    match s.waypoint_bearing {
+                        None => format!("WP: N/A"),
+                        Some(b) => format!("WP: {:.*}", 1, b),
                     },
                     &c);
-    y += line_height;
+    y = top + line_height;
 
-    // how much do we need to turn?
+    // Line 6 - how much do we need to turn?
     video.draw_text(x1,
                     y,
                     match s.turn {
@@ -469,10 +500,6 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
                         Some(b) => format!("Turn: {:.*}", 1, b),
                     },
                     &c);
-    y += line_height;
-
-    // action
-    video.draw_text(x1, y, format!("{:?}", s.action), &c);
 
     // COLUMN 2
 
@@ -506,5 +533,10 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
                     y,
                     format!("FL={}, FF={}, FR={}", s.usonic[2], s.usonic[1], s.usonic[0]),
                     &c);
+    y += line_height;
+
+    // action
+    video.draw_text(x2, y, format!("{:?}", s.action), &c);
+
 
 }
