@@ -35,7 +35,7 @@ impl Switch {
             if input.is_exported() {
                 input.set_direction(Direction::In).unwrap();
             } else {
-                input.with_exported(|| input.set_direction(Direction::In).unwrap());
+                input.with_exported(|| input.set_direction(Direction::In)).unwrap();
             }
 
             // loop forever

@@ -7,7 +7,7 @@ dependencies = [
  "graceful 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.15 (registry+https://github.com/rust-lang/crates.io-index)",
  "navigation 0.1.7 (registry+https://github.com/rust-lang/crates.io-index)",
- "qik 1.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "qik 1.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.3.14 (registry+https://github.com/rust-lang/crates.io-index)",
  "serial 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "spidev 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -155,7 +155,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "qik"
-version = "1.2.2"
+version = "1.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "serial 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -308,7 +308,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum num-integer 0.1.32 (registry+https://github.com/rust-lang/crates.io-index)" = "fb24d9bfb3f222010df27995441ded1e954f8f69cd35021f6bef02ca9552fb92"
 "checksum num-iter 0.1.32 (registry+https://github.com/rust-lang/crates.io-index)" = "287a1c9969a847055e1122ec0ea7a5c5d6f72aad97934e131c83d5c08ab4e45c"
 "checksum num-traits 0.1.35 (registry+https://github.com/rust-lang/crates.io-index)" = "8359ea48994f253fa958b5b90b013728b06f54872e5a58bce39540fcdd0f2527"
-"checksum qik 1.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "7f8fd5109bdbe2ab1f52833095793042aa9b8a4f524e2cc867534493b9d739a5"
+"checksum qik 1.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "9f8425a6aba290ef1793f0b8fecf0c534028abbd167cfa341659037feb6088eb"
 "checksum rand 0.3.14 (registry+https://github.com/rust-lang/crates.io-index)" = "2791d88c6defac799c3f20d74f094ca33b9332612d9aef9078519c82e4fe04a5"
 "checksum regex 0.1.75 (registry+https://github.com/rust-lang/crates.io-index)" = "f62414f9d3b0f53e827ac46d6f8ce2ff6a91afd724225a5986e54e81e170693c"
 "checksum regex-syntax 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)" = "279401017ae31cf4e15344aa3f085d0e2e5c1e70067289ef906906fdbe92c8fd"
