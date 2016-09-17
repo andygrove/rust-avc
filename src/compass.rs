@@ -4,6 +4,8 @@ use std::time::Duration;
 use std::sync::{Arc, Mutex};
 use std::thread;
 
+use std::f32;
+
 use std::io::prelude::*;
 use self::serial::prelude::*;
 
@@ -48,6 +50,11 @@ impl Compass {
 
         try!(port.set_timeout(Duration::from_millis(5000)));
 
+        // send serial command to tell the board to output sensor readings in text format
+//        let cmd : Vec<u8> = vec![0x23, 0x6f, 0x73, 0x63, 0x74]; // #osct
+//        try!(port.write(&cmd));
+//        try!(port.flush());
+
         // start thread to read from serial port
         let _ = thread::spawn(move || {
 
@@ -59,23 +66,50 @@ impl Compass {
                 let n = port.read(&mut read_buf[..]).unwrap();
                 for i in 0..n {
                     let ch = read_buf[i] as char;
-                    if ch == '.' || ch.is_numeric() {
-                        buf.push(ch);
-                    } else if ch == '\n' {
+                    if ch == '\n' {
                         let sentence = String::from(&buf[..]);
-                        match sentence.parse::<f32>() {
-                            Ok(n) => {
-                                // only update the shared state if the bearing actually changed
-                                if (last_bearing - n).abs() > 0.1 {
-                                    last_bearing = n;
-                                    compass_bearing.lock().unwrap().set(n);
-                                }
-                            }
-                            Err(e) => {
-                                println!("Failed to parse bearing '{}' due to {:?}", sentence, e)
-                            }
+//                        println!("IMU: {}", sentence);
+
+//                        #YPR=149.62,6.15,-1.22
+//                        #YPR=149.72,6.15,-1.20
+
+                        let parts: Vec<&str> = sentence.split(",").collect();
+
+                        if parts.len() == 0 || parts[0].len() < 6 {
+                            continue;
                         }
+
+                        let heading_str = &parts[0][5..];
+
+                        match heading_str.parse::<f32>() {
+                            Ok(h) => {
+                                let heading = if h >= 0.0 { h } else { h + 360.0 };
+                                println!("heading: {}", heading);
+
+                                if (last_bearing - heading).abs() > 0.1 {
+                                    last_bearing = heading;
+                                    compass_bearing.lock().unwrap().set(heading);
+                                }
+                            },
+                            _ => {}
+                        };
+
+
+//                        match sentence.parse::<f32>() {
+//                            Ok(n) => {
+//                                // only update the shared state if the bearing actually changed
+//                                if (last_bearing - n).abs() > 0.1 {
+//                                    last_bearing = n;
+//                                    compass_bearing.lock().unwrap().set(n);
+//                                }
+//                            }
+//                            Err(e) => {
+//                                println!("Failed to parse bearing '{}' due to {:?}", sentence, e)
+//                            }
+//                        }
                         buf.clear();
+                    } else {
+                        buf.push(ch);
                     }
                 }
 
