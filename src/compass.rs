@@ -86,6 +86,15 @@ impl Compass {
     }
 
     pub fn get(&self) -> Option<f32> {
-        self.bearing.lock().unwrap().value
+        //hacking some manual compensation for bad readings :-(
+        match self.bearing.lock().unwrap().value {
+            None => None,
+            Some(v) =>
+                if v > 270.0 {
+                    Some(v - 10.0)
+                } else {
+                    Some(v)
+                }
+        }
     }
 }

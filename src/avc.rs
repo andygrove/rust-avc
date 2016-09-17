@@ -23,6 +23,7 @@ use std::time::Duration;
 pub struct Settings {
     pub max_speed: i8,
     pub differential_drive_coefficient: f32,
+    pub waypoint_accuracy: (f64, f64), // lat, lon
     pub waypoints: Vec<Location>,
     pub obstacle_avoidance_distance: u8,
     pub usonic_sample_count: usize,
@@ -161,7 +162,7 @@ impl AVC {
 
         let mut o = Octasonic::new(3, self.settings.usonic_sample_count).unwrap();
 
-        let n = 3; // sensor count
+        let n = 5; // sensor count
         o.set_sensor_count(n);
         let m = o.get_sensor_count();
         if n != m {
@@ -246,8 +247,8 @@ impl AVC {
                 return false;
             }
 
-            // performing this logic 100 times per second should be enough
-//            thread::sleep(Duration::from_millis(10));
+            // give the CPU a breather and let some other threads run
+            thread::sleep(Duration::from_millis(10));
 
             match io.gps.get() {
                 None => {
@@ -259,7 +260,7 @@ impl AVC {
                 }
                 Some(loc) => {
                     state.loc = Some((loc.lat, loc.lon));
-                    if close_enough(&loc, &wp) {
+                    if self.close_enough(&loc, &wp) {
                         state.set_action(Action::ReachedWaypoint { waypoint: wp_num });
                         return true;
                     }
@@ -276,7 +277,7 @@ impl AVC {
                             state.bearing = Some(b);
 
                             // get readings from ultrasonic sensors
-                            for i in 0..3 {
+                            for i in 0..5 {
                                 state.usonic[i] = o.get_sensor_reading(i as u8);
                             }
 
@@ -306,7 +307,10 @@ impl AVC {
                                 None => {
                                     // continue with navigation towards waypoint
                                     state.set_action(Action::Navigating { waypoint: wp_num });
+
                                     let wp_bearing = loc.calc_bearing_to(&wp) as f32;
+//                                    let wp_bearing = loc.estimate_bearing_to(&wp, 69.0, 53.0) as f32;
+
                                     let turn = calc_bearing_diff(b, wp_bearing);
                                     let mut left_speed = self.settings.max_speed;
                                     let mut right_speed = self.settings.max_speed;
@@ -339,20 +343,27 @@ impl AVC {
 
     /// check sensors and determine if we need to take some action
     fn check_obstacles(&self, state: &State) -> Option<Action> {
-        let (fl, ff, fr) = (state.usonic[2], state.usonic[1], state.usonic[0]);
+
+        // mapping - the sensors aren't wired up in a logical order
+        let (fl, ff, fr, rr, ll) = (state.usonic[2], state.usonic[1],
+                                    state.usonic[0], state.usonic[3], state.usonic[4]);
 
         let min_d = self.settings.obstacle_avoidance_distance;
 
+        // find the closest obstacle on each side
+        let left  = if ll < fl { ll } else { fl };
+        let right = if rr < fr { rr } else { fr };
+
         // determine avoidance action
         if ff < min_d {
-            if fl < min_d {
-                if fr < min_d {
+            if left < min_d {
+                if right < min_d {
                     Some(Action::EmergencyStop)
                 } else {
                     Some(Action::AvoidingObstacleToLeft)
                 }
-            } else if fr < min_d {
-                if fl < min_d {
+            } else if right < min_d {
+                if left < min_d {
                     Some(Action::EmergencyStop)
                 } else {
                     Some(Action::AvoidingObstacleToRight)
@@ -370,9 +381,9 @@ impl AVC {
                     None => Some(Action::AvoidingObstacleToLeft),
                 }
             }
-        } else if fl < min_d {
+        } else if left < min_d {
             Some(Action::AvoidingObstacleToLeft)
-        } else if fr < min_d {
+        } else if right < min_d {
             Some(Action::AvoidingObstacleToRight)
         } else {
             None
@@ -392,13 +403,14 @@ impl AVC {
         *x = Box::new(state.clone());
         true
     }
+
+    fn close_enough(&self, a: &Location, b: &Location) -> bool {
+        (a.lat - b.lat).abs() < self.settings.waypoint_accuracy.0
+            && (a.lon - b.lon).abs() < self.settings.waypoint_accuracy.1
+    }
+
 }
 
-
-fn close_enough(a: &Location, b: &Location) -> bool {
-    let accurancy = 0.000025;
-    (a.lat - b.lat).abs() < accurancy && (a.lon - b.lon).abs() < accurancy
-}
 
 fn calc_bearing_diff(current_bearing: f32, wp_bearing: f32) -> f32 {
     let mut ret = wp_bearing - current_bearing;

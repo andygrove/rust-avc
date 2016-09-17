@@ -130,7 +130,8 @@ fn run_avc(conf: Config, filename: &str) {
             .as_i64()
             .unwrap() as u8,
         differential_drive_coefficient: 2_f32,
-        usonic_sample_count: 5,
+        waypoint_accuracy: (0.000025, 0.000025),
+        usonic_sample_count: 4,
         waypoints: course,
     };
 
@@ -292,27 +293,35 @@ fn test_video(conf: &Config) {
 }
 
 fn test_ultrasonic() {
-    let mut o = Octasonic::new(3, 5).unwrap();
-    let n = 3; // sensor count
+    let n = 5_u8; // sensor count
+    let sample_count = 5;
+    let mut o = Octasonic::new(n as usize, sample_count).unwrap();
     o.set_sensor_count(n);
     let m = o.get_sensor_count();
     if n != m {
         panic!("Warning: failed to set sensor count! {} != {}", m, n);
     }
 
+    let mut usonic = vec![0_u8; n as usize];
     loop {
-        print!("Ultrasonic: ");
+
         for i in 0..n {
-            print!("{}  ", o.get_sensor_reading(i));
+            usonic[i as usize] = o.get_sensor_reading(i as u8);
         }
-        println!(" cm");
+
+        let (fl, ff, fr, rr, ll) = (usonic[2], usonic[1],
+                                    usonic[0], usonic[3], usonic[4]);
+
+        println!("Ultrasonic: {} {} {} {} {}", ll, fl, ff, fr, rr);
+
         thread::sleep(Duration::from_millis(100));
     }
 }
 
 fn test_ultrasonic_with_motors(conf: &Config) {
-    let mut o = Octasonic::new(3, 5).unwrap();
-    let n = 3; // sensor count
+    let n = 5_u8; // sensor count
+    let sample_count = 5;
+    let mut o = Octasonic::new(n as usize, sample_count).unwrap();
     o.set_sensor_count(n);
     let m = o.get_sensor_count();
     if n != m {
@@ -322,15 +331,22 @@ fn test_ultrasonic_with_motors(conf: &Config) {
     let mut qik = qik::Qik::new(String::from(conf.qik_device), 18).unwrap();
     qik.init().unwrap();
 
+    let mut usonic = vec![0_u8; n as usize];
+    let mut b = false;
     let mut counter = 0;
-    let mut b = true;
     loop {
-        print!("Ultrasonic: ");
+
         for i in 0..n {
-            print!("{}  ", o.get_sensor_reading(i));
+            usonic[i as usize] = o.get_sensor_reading(i as u8);
         }
-        println!(" cm");
+
+        let (fl, ff, fr, rr, ll) = (usonic[2], usonic[1],
+                                    usonic[0], usonic[3], usonic[4]);
+
+        println!("Ultrasonic: {} {} {} {} {}", ll, fl, ff, fr, rr);
+
         thread::sleep(Duration::from_millis(100));
+
         counter += 1;
         if counter % 10 == 0 {
             counter = 0;
