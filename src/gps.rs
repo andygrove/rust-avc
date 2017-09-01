@@ -53,7 +53,7 @@ impl GPS {
                 for i in 0..n {
                     let ch = read_buf[i] as char;
                     if ch == '\n' {
-                        let sentence = String::from(&buf[..]);
+                        let sentence : String = String::from_utf8(buf.iter().map(|x| *x as u8).collect::<Vec<u8>>()).unwrap();
                         // println!("NMEA: {}", sentence);
 
                         let parts: Vec<&str> = sentence.split(",").collect();

@@ -67,7 +67,7 @@ impl Compass {
                 for i in 0..n {
                     let ch = read_buf[i] as char;
                     if ch == '\n' {
-                        let sentence = String::from(&buf[..]);
+                        let sentence :String = String::from_utf8(buf.iter().map(|x| *x as u8).collect::<Vec<u8>>()).unwrap();
 //                        println!("IMU: {}", sentence);
 
 //                        #YPR=149.62,6.15,-1.22
