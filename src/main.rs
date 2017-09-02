@@ -182,8 +182,8 @@ fn test_gps(conf: &Config) {
 
 fn test_imu(conf: &Config) {
     println!("Testing IMU");
-    let compass = Compass::new(conf.imu_device);
-    compass.start_thread().unwrap();
+    let mut compass = Compass::new(conf.imu_device);
+    //compass.start_thread().unwrap();
     loop {
         println!("Compass: {:?}", compass.get());
         thread::sleep(Duration::from_millis(1000));
@@ -229,8 +229,8 @@ fn test_video(conf: &Config) {
     let gps = GPS::new(conf.gps_device);
     gps.start_thread();
 
-    let compass = Compass::new(conf.imu_device);
-    compass.start_thread().unwrap();
+    let mut compass = Compass::new(conf.imu_device);
+    //compass.start_thread().unwrap();
 
     let video = Video::new(0);
 

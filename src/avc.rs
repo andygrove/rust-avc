@@ -116,7 +116,7 @@ impl AVC {
         };
 
         io.gps.start_thread();
-        io.imu.start_thread().unwrap();
+//        io.imu.start_thread().unwrap();
         switch.start_thread();
 
         // start the thread to write the video
@@ -278,7 +278,7 @@ impl AVC {
 
                             // get readings from ultrasonic sensors
                             for i in 0..5 {
-                                state.usonic[i] = o.get_sensor_reading(i as u8);
+                                state.usonic[i] = 255; //o.get_sensor_reading(i as u8);
                             }
 
                             match self.check_obstacles(&state) {
