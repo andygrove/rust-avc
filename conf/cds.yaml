@@ -1,0 +1,12 @@
+enable_motors: true
+max_speed: 60
+min_speed: 0
+obstacle_avoidance_distance: 70
+waypoints:
+  - [39.950380, -105.060512]
+  - [39.950500, -105.060524]
+  - [39.950431, -105.060700]
+  - [39.950347, -105.060621]
+
+
+

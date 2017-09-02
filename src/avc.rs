@@ -160,15 +160,15 @@ impl AVC {
             println!("Video thread terminated");
         });
 
-        let mut o = Octasonic::new(3, self.settings.usonic_sample_count).unwrap();
-
+        //let mut o = Octasonic::new(3, self.settings.usonic_sample_count).unwrap();
+/*
         let n = 5; // sensor count
         o.set_sensor_count(n);
         let m = o.get_sensor_count();
         if n != m {
             panic!("Warning: failed to set sensor count! {} != {}", m, n);
         }
-
+*/
         let mut state = State::new();
 
         // wait for start switch
@@ -190,7 +190,6 @@ impl AVC {
                                           &mut io,
                                           &mut state,
                                           &nav_state,
-                                          &mut o,
                                           &switch) {
 
                 // set shared state to Aborted so the video thread finishes
@@ -224,7 +223,6 @@ impl AVC {
                             io: &mut IO,
                             state: &mut State,
                             nav_state: &Arc<Mutex<Box<State>>>,
-                            o: &mut Octasonic,
                             switch: &Switch)
                             -> bool {
 
@@ -277,7 +275,8 @@ impl AVC {
                             state.bearing = Some(b);
 
                             // get readings from ultrasonic sensors
-                            for i in 0..5 {
+/*
+                            for i in 0..3 {
                                 state.usonic[i] = 255; //o.get_sensor_reading(i as u8);
                             }
 
@@ -305,7 +304,8 @@ impl AVC {
                                     };
                                 },
                                 None => {
-                                    // continue with navigation towards waypoint
+  */
+                                  // continue with navigation towards waypoint
                                     state.set_action(Action::Navigating { waypoint: wp_num });
 
                                     let wp_bearing = loc.calc_bearing_to(&wp) as f32;
@@ -329,8 +329,8 @@ impl AVC {
                                     state.turn = Some(turn);
                                     state.speed = (Motion::Speed(left_speed),
                                                    Motion::Speed(right_speed));
-                                }
-                            }
+                            //    }
+//                            }
 
                             // set motor speeds
                             io.motors.set(state.speed.0, state.speed.1);

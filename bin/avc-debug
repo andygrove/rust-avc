@@ -7,5 +7,5 @@ gpio export 17 in
 gpio write 18 0
 gpio export 18 out
 cd ~/rust-avc
-./target/debug/avc --avc --filename=conf/basketball_court.yaml
+./target/debug/avc --avc --filename=conf/cds.yaml
 sleep 10

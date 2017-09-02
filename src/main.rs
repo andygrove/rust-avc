@@ -69,7 +69,7 @@ fn main() {
 
     let conf = Config {
         gps_device: "/dev/gps",
-        imu_device: "/dev/imu",
+        imu_device: "/dev/i2c-1",
         qik_device: "/dev/qik",
     };
 
