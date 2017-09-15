@@ -24,8 +24,8 @@ impl Lidar {
                     Ok(ref samples) if samples.len() > 0 => {
                         let mut first = (samples.first().unwrap().angle / 100) as usize;
                         let mut last = (samples.first().unwrap().angle / 100) as usize;
-if first > 359 { first = 359 };
-if last > 359 { last = 359 };
+                        if first > 359 { first = 359 };
+                        if last > 359 { last = 359 };
 
                         let mut points  = points_clone.lock().unwrap();
 
@@ -47,9 +47,9 @@ if last > 359 { last = 359 };
                         for i in 0..samples.len() {
                             let sample = &samples[i];
                             let angle = (sample.angle / 100) as usize;
-if angle >=0 && angle < 360 {
-                            points[angle] = sample.distance as u32;
-}
+                            if angle > 1 && angle < 360 {
+                                points[angle] = sample.distance as u32;
+                            }
                         }
 
                     },
@@ -64,10 +64,25 @@ if angle >=0 && angle < 360 {
     pub fn min(&self, start: usize, end: usize) -> u32 {
         let points  = self.points.lock().unwrap();
         let mut min = points[start];
-        for i in start..end {
-            if points[i] < min {
-                min = points[i]
+        if start < end {
+            for i in start..end {
+                if points[i] < min {
+                    min = points[i]
+                }
             }
+
+        } else {
+            for i in start..360 {
+                if points[i] < min {
+                    min = points[i]
+                }
+            }
+            for i in 0..end {
+                if points[i] < min {
+                    min = points[i]
+                }
+            }
+
         }
         min
     }
