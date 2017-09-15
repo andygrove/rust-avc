@@ -33,9 +33,9 @@ impl Lidar {
                         }
 
                         // this is one complete scan
-//                        let mut first = (samples.first().unwrap().angle / 1000) as usize;
-//                        let mut last = (samples.last().unwrap().angle / 1000) as usize;
-                        //println!("LIDAR: {}..{} degrees has {} samples", first, last, samples.len());
+                        let mut first = (samples.first().unwrap().angle / 1000) as usize;
+                        let mut last = (samples.last().unwrap().angle / 1000) as usize;
+                        println!("LIDAR: {}..{} degrees has {} samples", first, last, samples.len());
 
                         // store the points (but only the good ones)
                         for i in 0..samples.len() {
