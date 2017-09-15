@@ -4,11 +4,11 @@ extern crate graceful;
 
 use super::video::*;
 use super::compass::*;
+use super::lidar::*;
 use super::gps::*;
 use super::motors::*;
 use super::Config;
 use super::switch::*;
-use super::octasonic::*;
 
 use chrono::UTC;
 use chrono::DateTime;
@@ -25,7 +25,7 @@ pub struct Settings {
     pub differential_drive_coefficient: f32,
     pub waypoint_accuracy: (f64, f64), // lat, lon
     pub waypoints: Vec<Location>,
-    pub obstacle_avoidance_distance: u8,
+    pub obstacle_avoidance_distance: u32,
     pub usonic_sample_count: usize,
 }
 
@@ -55,7 +55,11 @@ pub struct State {
     turn: Option<f32>,
     pub action: Action,
     speed: (Motion, Motion),
-    usonic: Vec<u8>,
+    distance_front: u32,
+    distance_front_left: u32,
+    distance_front_right: u32,
+    distance_side_left: u32,
+    distance_side_right: u32,
 }
 
 impl State {
@@ -68,7 +72,11 @@ impl State {
             turn: None,
             action: Action::WaitingForStartCommand,
             speed: (Motion::Speed(0), Motion::Speed(0)),
-            usonic: vec![255, 255, 255],
+            distance_front: 0,
+            distance_front_left: 0,
+            distance_front_right: 0,
+            distance_side_left: 0,
+            distance_side_right: 0,
         }
     }
 
@@ -85,6 +93,7 @@ struct IO<'a> {
     gps: GPS,
     imu: Compass,
     motors: Motors<'a>,
+    lidar: Lidar
 }
 
 pub struct AVC {
@@ -113,6 +122,7 @@ impl AVC {
             gps: GPS::new(self.conf.gps_device),
             imu: Compass::new(self.conf.imu_device),
             motors: Motors::new(&mut qik),
+            lidar: Lidar::new(String::from(self.conf.lidar_device))
         };
 
         io.gps.start_thread();
@@ -160,15 +170,6 @@ impl AVC {
             println!("Video thread terminated");
         });
 
-        //let mut o = Octasonic::new(3, self.settings.usonic_sample_count).unwrap();
-/*
-        let n = 5; // sensor count
-        o.set_sensor_count(n);
-        let m = o.get_sensor_count();
-        if n != m {
-            panic!("Warning: failed to set sensor count! {} != {}", m, n);
-        }
-*/
         let mut state = State::new();
 
         // wait for start switch
@@ -274,11 +275,10 @@ impl AVC {
                         Some(b) => {
                             state.bearing = Some(b);
 
-                            // get readings from ultrasonic sensors
-/*
-                            for i in 0..3 {
-                                state.usonic[i] = 255; //o.get_sensor_reading(i as u8);
-                            }
+                            // simulate ultrasonic sensors with LIDAR data
+                            state.distance_front_left  = io.lidar.min(225, 315);
+                            state.distance_front       = io.lidar.min(315, 45);
+                            state.distance_front_right = io.lidar.min(45, 135);
 
                             match self.check_obstacles(&state) {
                                 Some(avoid) => {
@@ -304,12 +304,10 @@ impl AVC {
                                     };
                                 },
                                 None => {
-  */
-                                  // continue with navigation towards waypoint
+                                    // continue with navigation towards waypoint
                                     state.set_action(Action::Navigating { waypoint: wp_num });
 
                                     let wp_bearing = loc.calc_bearing_to(&wp) as f32;
-//                                    let wp_bearing = loc.estimate_bearing_to(&wp, 69.0, 53.0) as f32;
 
                                     let turn = calc_bearing_diff(b, wp_bearing);
                                     let mut left_speed = self.settings.max_speed;
@@ -329,8 +327,8 @@ impl AVC {
                                     state.turn = Some(turn);
                                     state.speed = (Motion::Speed(left_speed),
                                                    Motion::Speed(right_speed));
-                            //    }
-//                            }
+                                }
+                            }
 
                             // set motor speeds
                             io.motors.set(state.speed.0, state.speed.1);
@@ -344,15 +342,13 @@ impl AVC {
     /// check sensors and determine if we need to take some action
     fn check_obstacles(&self, state: &State) -> Option<Action> {
 
-        // mapping - the sensors aren't wired up in a logical order
-        let (fl, ff, fr, rr, ll) = (state.usonic[2], state.usonic[1],
-                                    state.usonic[0], state.usonic[3], state.usonic[4]);
-
         let min_d = self.settings.obstacle_avoidance_distance;
 
+        let ff = state.distance_front;
+
         // find the closest obstacle on each side
-        let left  = if ll < fl { ll } else { fl };
-        let right = if rr < fr { rr } else { fr };
+        let left  = state.distance_front_left;
+        let right = state.distance_front_right;
 
         // determine avoidance action
         if ff < min_d {
@@ -541,7 +537,10 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
     // ultrasonic sensors
     video.draw_text(x2,
                     y,
-                    format!("FL={}, FF={}, FR={}", s.usonic[2], s.usonic[1], s.usonic[0]),
+                    format!("FL={}, FF={}, FR={}",
+                            s.distance_front_left,
+                            s.distance_front,
+                            s.distance_front_right),
                     &c);
     y += line_height;
 

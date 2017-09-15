@@ -4,6 +4,7 @@ extern crate chrono;
 extern crate navigation;
 extern crate qik;
 extern crate yaml_rust;
+extern crate serial;
 
 use getopts::Options;
 use chrono::UTC;
@@ -22,6 +23,7 @@ mod video;
 mod avc;
 mod motors;
 mod switch;
+mod lidar;
 
 use gps::GPS;
 use compass::Compass;
@@ -30,14 +32,13 @@ use avc::*;
 use switch::*;
 use motors::*;
 use qik::*;
-
-mod octasonic;
-use octasonic::*;
+use lidar::*;
 
 pub struct Config {
     gps_device: &'static str,
     imu_device: &'static str,
     qik_device: &'static str,
+    lidar_device: &'static str,
 }
 
 fn main() {
@@ -54,10 +55,6 @@ fn main() {
     opts.optflag("i", "test-imu", "tests the IMU");
     opts.optflag("m", "test-motors", "tests the motors");
     opts.optflag("s", "test-switch", "tests the switch");
-    opts.optflag("u", "test-ultrasonic", "tests the ultrasonic sensors");
-    opts.optflag("w",
-                 "test-ultrasonic-with-motors",
-                 "tests the ultrasonic sensors and motors together");
     opts.optflag("c", "capture-gps", "records a GPS waypoint to file");
     opts.optflag("a", "avc", "Start the web server");
     opts.optopt("f", "filename", "Course filename", "conf/avc.yaml");
@@ -71,6 +68,7 @@ fn main() {
         gps_device: "/dev/gps",
         imu_device: "/dev/i2c-1",
         qik_device: "/dev/qik",
+        lidar_device: "/dev/lidar",
     };
 
     if matches.opt_present("g") {
@@ -83,10 +81,6 @@ fn main() {
         test_motors(&conf);
     } else if matches.opt_present("s") {
         test_switch();
-    } else if matches.opt_present("u") {
-        test_ultrasonic();
-    } else if matches.opt_present("w") {
-        test_ultrasonic_with_motors(&conf);
     } else if matches.opt_present("c") {
         capture_gps(&conf);
     } else if matches.opt_present("a") {
@@ -128,7 +122,7 @@ fn run_avc(conf: Config, filename: &str) {
             doc.get(&Yaml::String(String::from("obstacle_avoidance_distance")))
             .unwrap()
             .as_i64()
-            .unwrap() as u8,
+            .unwrap() as u32,
         differential_drive_coefficient: 2_f32,
         waypoint_accuracy: (0.000025, 0.000025),
         usonic_sample_count: 4,
@@ -290,76 +284,6 @@ fn test_video(conf: &Config) {
     }
 
     video.close();
-}
-
-fn test_ultrasonic() {
-    let n = 5_u8; // sensor count
-    let sample_count = 5;
-    let mut o = Octasonic::new(n as usize, sample_count).unwrap();
-    o.set_sensor_count(n);
-    let m = o.get_sensor_count();
-    if n != m {
-        panic!("Warning: failed to set sensor count! {} != {}", m, n);
-    }
-
-    let mut usonic = vec![0_u8; n as usize];
-    loop {
-
-        for i in 0..n {
-            usonic[i as usize] = o.get_sensor_reading(i as u8);
-        }
-
-        let (fl, ff, fr, rr, ll) = (usonic[2], usonic[1],
-                                    usonic[0], usonic[3], usonic[4]);
-
-        println!("Ultrasonic: {} {} {} {} {}", ll, fl, ff, fr, rr);
-
-        thread::sleep(Duration::from_millis(100));
-    }
-}
-
-fn test_ultrasonic_with_motors(conf: &Config) {
-    let n = 5_u8; // sensor count
-    let sample_count = 5;
-    let mut o = Octasonic::new(n as usize, sample_count).unwrap();
-    o.set_sensor_count(n);
-    let m = o.get_sensor_count();
-    if n != m {
-        panic!("Warning: failed to set sensor count! {} != {}", m, n);
-    }
-
-    let mut qik = qik::Qik::new(String::from(conf.qik_device), 18).unwrap();
-    qik.init().unwrap();
-
-    let mut usonic = vec![0_u8; n as usize];
-    let mut b = false;
-    let mut counter = 0;
-    loop {
-
-        for i in 0..n {
-            usonic[i as usize] = o.get_sensor_reading(i as u8);
-        }
-
-        let (fl, ff, fr, rr, ll) = (usonic[2], usonic[1],
-                                    usonic[0], usonic[3], usonic[4]);
-
-        println!("Ultrasonic: {} {} {} {} {}", ll, fl, ff, fr, rr);
-
-        thread::sleep(Duration::from_millis(100));
-
-        counter += 1;
-        if counter % 10 == 0 {
-            counter = 0;
-            b = !b;
-            if b {
-                qik.set_speed(Motor::M0, 80).unwrap();
-                qik.set_speed(Motor::M1, 80).unwrap();
-            } else {
-                qik.set_speed(Motor::M0, 0).unwrap();
-                qik.set_speed(Motor::M1, 0).unwrap();
-            }
-        }
-    }
 }
 
 fn test_switch() {

@@ -111,7 +111,9 @@ Connect the first device to the Pi and use `ls -l /dev/tty*` to find the device 
 
 Once you know the device name, in the case /dev/ttyUSB0, use `udevadm` to show the unique serial id of the device:
 
+```
 udevadm info --attribute-walk /dev/ttyUSB0 | grep -i serial
+```
 
 In my case, I created the file `/etc/udev/rules.d/gforce.rules` containing the following:
 
@@ -119,6 +121,7 @@ In my case, I created the file `/etc/udev/rules.d/gforce.rules` containing the f
 SUBSYSTEM=="tty", ATTRS{serial}=="A105BOB5", SYMLINK+="imu"
 SUBSYSTEM=="tty", ATTRS{serial}=="AL00ERTT", SYMLINK+="gps"
 SUBSYSTEM=="tty", ATTRS{serial}=="AI0483D0", SYMLINK+="qik"
+SUBSYSTEM=="tty", ATTRS{serial}=="DM00KC6Z", SYMLINK+="lidar"
 ```
 
 I then used `sudo reboot` to reboot the Pi and then I was able to refer to the serial devices as `/dev/imu`, `/dev/gpu`, and `/dev/qik`.
