@@ -23,7 +23,7 @@ impl Lidar {
                 match sweep.scan() {
                     Ok(ref samples) if samples.len() > 0 => {
                         let mut first = (samples.first().unwrap().angle / 100) as usize;
-                        let mut last = (samples.first().unwrap().angle / 100) as usize;
+                        let mut last = (samples.last().unwrap().angle / 100) as usize;
                         if first > 359 { first = 359 };
                         if last > 359 { last = 359 };
 
