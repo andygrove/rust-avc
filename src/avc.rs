@@ -281,7 +281,7 @@ impl AVC {
                             state.distance_front_left  = io.lidar.min(225, 315);
                             state.distance_front       = io.lidar.min(315, 45);
                             state.distance_front_right = io.lidar.min(45, 135);
-                            io.lidar.gVet(&state.lidar);
+                            io.lidar.get(&state.lidar);
 
                             match self.check_obstacles(&state) {
                                 Some(avoid) => {
@@ -552,13 +552,18 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
 
     // draw raw LIDAR data points
     let lc = Color::new(40, 40, 200, 24); // r, g, b, alpha
+
+    // right hand side of screen
     for i in 0..180 {
-        let d = s.lidar[i]/4 as u32;
-        video.fill_rect(320+i, d, 320+i+2, d+2, lc);
+        let x = i as u32 + 320;
+        let y = s.lidar[i]/4 as u32;
+        video.fill_rect(x, y, x+2, y+2, &lc);
     }
+    // left hand side of screen
     for i in 180..360 {
-        let d = s.lidar[i]/4 as u32;
-        video.fill_rect(140+i, d, 140+i+2, d+2, lc);
+        let x = i as u32 + 140;
+        let y = s.lidar[i]/4 as u32;
+        video.fill_rect(x, y, x+2, y+2, &lc);
     }
 
 }
