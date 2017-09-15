@@ -557,13 +557,13 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
     for i in 0..180 {
         let x = i as u32 + 320;
         let y = s.lidar[i]/4 as u32;
-        video.fill_rect(x, y, x+2, y+2, &lc);
+        video.fill_rect(x, y, 2, 2, &lc);
     }
     // left hand side of screen
     for i in 180..360 {
-        let x = i as u32 + 140;
+        let x = i as u32 - 180 + 140;
         let y = s.lidar[i]/4 as u32;
-        video.fill_rect(x, y, x+2, y+2, &lc);
+        video.fill_rect(x, y, 2, 2, &lc);
     }
 
 }
