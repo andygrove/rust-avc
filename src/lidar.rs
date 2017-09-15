@@ -57,7 +57,7 @@ impl Lidar {
         lidar
     }
 
-    pub fn get(&self, &buffer: [u32; 360]) {
+    pub fn get(&self, buffer: &mut Vec<u32>) {
         let points  = self.points.lock().unwrap();
         for i in 0..360 {
             buffer[i] = points[i]

@@ -55,7 +55,7 @@ pub struct State {
     turn: Option<f32>,
     pub action: Action,
     speed: (Motion, Motion),
-    lidar: [u32; 360],
+    lidar: Vec<u32>,
     distance_front: u32,
     distance_front_left: u32,
     distance_front_right: u32,
@@ -73,7 +73,7 @@ impl State {
             turn: None,
             action: Action::WaitingForStartCommand,
             speed: (Motion::Speed(0), Motion::Speed(0)),
-            lidar: vec![],
+            lidar: vec![0_u32; 360],
             distance_front: 0,
             distance_front_left: 0,
             distance_front_right: 0,
@@ -281,7 +281,7 @@ impl AVC {
                             state.distance_front_left  = io.lidar.min(225, 315);
                             state.distance_front       = io.lidar.min(315, 45);
                             state.distance_front_right = io.lidar.min(45, 135);
-                            io.lidar.get(&state.lidar);
+                            io.lidar.gVet(&state.lidar);
 
                             match self.check_obstacles(&state) {
                                 Some(avoid) => {
