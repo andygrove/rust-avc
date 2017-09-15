@@ -41,7 +41,8 @@ impl Lidar {
                         for i in 0..samples.len() {
                             let sample = &samples[i];
                             if sample.signal_strength > 100 && sample.distance > 1 {
-                                let angle = sample.angle / 1000;
+                                let mut angle = sample.angle / 1000;
+                                angle = 360 - angle; // it spins counter clockwise!
                                 if angle >= 0 && angle < 360 {
                                     points[angle as usize] = sample.distance as u32;
                                 }

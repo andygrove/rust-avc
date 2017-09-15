@@ -552,17 +552,18 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
 
     // draw raw LIDAR data points
     let lc = Color::new(40, 40, 200, 24); // r, g, b, alpha
+    let screen_height = 480;
 
     // right hand side of screen
     for i in 0..180 {
         let x = i as u32 + 320;
-        let y = s.lidar[i]/4 as u32;
+        let y = screen_height - s.lidar[i]/4 as u32;
         video.fill_rect(x, y, 2, 2, &lc);
     }
     // left hand side of screen
     for i in 180..360 {
         let x = i as u32 - 180 + 140;
-        let y = s.lidar[i]/4 as u32;
+        let y = screen_height - s.lidar[i]/4 as u32;
         video.fill_rect(x, y, 2, 2, &lc);
     }
 
