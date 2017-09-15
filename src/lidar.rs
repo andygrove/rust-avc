@@ -57,6 +57,13 @@ impl Lidar {
         lidar
     }
 
+    pub fn get(&self, &buffer: [u32; 360]) {
+        let points  = self.points.lock().unwrap();
+        for i in 0..360 {
+            buffer[i] = points[i]
+        }
+    }
+
     pub fn min(&self, start: usize, end: usize) -> u32 {
         let points  = self.points.lock().unwrap();
         let mut min = points[start];

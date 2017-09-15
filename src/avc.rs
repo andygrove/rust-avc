@@ -55,6 +55,7 @@ pub struct State {
     turn: Option<f32>,
     pub action: Action,
     speed: (Motion, Motion),
+    lidar: [u32; 360],
     distance_front: u32,
     distance_front_left: u32,
     distance_front_right: u32,
@@ -72,6 +73,7 @@ impl State {
             turn: None,
             action: Action::WaitingForStartCommand,
             speed: (Motion::Speed(0), Motion::Speed(0)),
+            lidar: vec![],
             distance_front: 0,
             distance_front_left: 0,
             distance_front_right: 0,
@@ -279,6 +281,7 @@ impl AVC {
                             state.distance_front_left  = io.lidar.min(225, 315);
                             state.distance_front       = io.lidar.min(315, 45);
                             state.distance_front_right = io.lidar.min(45, 135);
+                            io.lidar.get(&state.lidar);
 
                             match self.check_obstacles(&state) {
                                 Some(avoid) => {
@@ -546,5 +549,16 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
 
     // action
     video.draw_text(x2, y, format!("{:?}", s.action), &c);
+
+    // draw raw LIDAR data points
+    let lc = Color::new(40, 40, 200, 24); // r, g, b, alpha
+    for i in 0..180 {
+        let d = s.lidar[i]/4 as u32;
+        video.fill_rect(320+i, d, 320+i+2, d+2, lc);
+    }
+    for i in 180..360 {
+        let d = s.lidar[i]/4 as u32;
+        video.fill_rect(140+i, d, 140+i+2, d+2, lc);
+    }
 
 }
