@@ -33,16 +33,15 @@ impl Lidar {
                         }
 
                         // this is one complete scan
-                        let mut first = (samples.first().unwrap().angle / 1000) as usize;
-                        let mut last = (samples.last().unwrap().angle / 1000) as usize;
-                        if first > 359 { first = 359 };
-                        if last > 359 { last = 359 };
+//                        let mut first = (samples.first().unwrap().angle / 1000) as usize;
+//                        let mut last = (samples.last().unwrap().angle / 1000) as usize;
+                        //println!("LIDAR: {}..{} degrees has {} samples", first, last, samples.len());
 
                         // store the points (but only the good ones)
                         for i in 0..samples.len() {
                             let sample = &samples[i];
                             if sample.signal_strength > 100 && sample.distance > 1 {
-                                let angle = sample.angle / 100;
+                                let angle = sample.angle / 1000;
                                 if angle >= 0 && angle < 360 {
                                     points[angle as usize] = sample.distance as u32;
                                 }
