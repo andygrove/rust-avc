@@ -37,7 +37,7 @@ impl Lidar {
                             }
                         } else {
                             // wrap around 360 point
-                            for i in first..359 {
+                            for i in first..360 {
                                 points[i] = max_distance;
                             }
                             for i in 0..last {
@@ -46,9 +46,11 @@ impl Lidar {
                         }
                         for i in 0..samples.len() {
                             let sample = &samples[i];
-                            let angle = (sample.angle / 100) as usize;
-                            if angle > 1 && angle < 360 {
-                                points[angle] = sample.distance as u32;
+                            if sample.signal_strength > 100 && sample.distance > 1 {
+                                let angle = (sample.angle / 100) as usize;
+                                if angle >= 0 && angle < 360 {
+                                    points[angle] = sample.distance as u32;
+                                }
                             }
                         }
 
