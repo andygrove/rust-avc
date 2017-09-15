@@ -8,6 +8,7 @@ use navigation::*;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
+use std::iter::FromIterator;
 
 pub struct GPS {
     filename: &'static str,
@@ -53,7 +54,7 @@ impl GPS {
                 for i in 0..n {
                     let ch = read_buf[i] as char;
                     if ch == '\n' {
-                        let sentence : String = String::from_utf8(buf.iter().map(|x| *x as u8).collect::<Vec<u8>>()).unwrap();
+                        let sentence : String = buf.iter().cloned().collect();
                         // println!("NMEA: {}", sentence);
 
                         let parts: Vec<&str> = sentence.split(",").collect();

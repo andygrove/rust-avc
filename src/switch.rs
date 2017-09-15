@@ -60,7 +60,7 @@ impl Switch {
                 if baseline == value {
                     // 0 means low and 255 means high. low means the switch is ON.
                     let mut s = state.lock().unwrap();
-                    *s = Some(baseline == 0);
+                    *s = Some(baseline != 0);
                 }
                 sleep(Duration::from_millis(250));
             }
