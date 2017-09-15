@@ -22,28 +22,23 @@ impl Lidar {
             loop {
                 match sweep.scan() {
                     Ok(ref samples) if samples.len() > 0 => {
-                        let mut first = (samples.first().unwrap().angle / 100) as usize;
-                        let mut last = (samples.last().unwrap().angle / 100) as usize;
+
+                        // get a lock on the points array
+                        let mut points  = points_clone.lock().unwrap();
+
+                        // reset points
+                        let max_distance = 1000;
+                        for i in 0..360 {
+                            points[i] = max_distance;
+                        }
+
+                        // this is one complete scan
+                        let mut first = (samples.first().unwrap().angle / 1000) as usize;
+                        let mut last = (samples.last().unwrap().angle / 1000) as usize;
                         if first > 359 { first = 359 };
                         if last > 359 { last = 359 };
 
-                        let mut points  = points_clone.lock().unwrap();
-
-                        // reset range
-                        let max_distance = 1000;
-                        if first < last {
-                            for i in first..last {
-                                points[i] = max_distance;
-                            }
-                        } else {
-                            // wrap around 360 point
-                            for i in first..360 {
-                                points[i] = max_distance;
-                            }
-                            for i in 0..last {
-                                points[i] = max_distance;
-                            }
-                        }
+                        // store the points (but only the good ones)
                         for i in 0..samples.len() {
                             let sample = &samples[i];
                             if sample.signal_strength > 100 && sample.distance > 1 {

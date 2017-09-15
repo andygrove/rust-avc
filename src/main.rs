@@ -32,7 +32,6 @@ use avc::*;
 use switch::*;
 use motors::*;
 use qik::*;
-use lidar::*;
 
 pub struct Config {
     gps_device: &'static str,
