@@ -4,6 +4,7 @@ extern crate chrono;
 extern crate navigation;
 extern crate qik;
 extern crate yaml_rust;
+extern crate serial;
 
 use getopts::Options;
 use chrono::UTC;

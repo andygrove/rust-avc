@@ -17,15 +17,42 @@ impl Lidar {
     }
 
     pub fn min(&self, start: usize, end: usize) -> u32 {
-        0
+        let mut min = self.points[start];
+        for i in start..end {
+            if self.points[i] < min {
+                min = self.points[i]
+            }
+        }
+        min
     }
 
     pub fn scan(&mut self) {
         match self.sweep.lock().unwrap().scan() {
-            Ok(samples) => {
-
+            Ok(ref samples) if samples.len() > 0 => {
+                let first = (samples.first().unwrap().angle / 100) as usize;
+                let last = (samples.first().unwrap().angle / 100) as usize;
+                // reset range
+                let max_distance = 1000;
+                if (first < last) {
+                    for i in first..last {
+                        self.points[i] = max_distance;
+                    }
+                } else {
+                    // wrap around 360 point
+                    for i in first..360 {
+                        self.points[i] = max_distance;
+                    }
+                    for i in 0..last {
+                        self.points[i] = max_distance;
+                    }
+                }
+                for i in 0..samples.len() {
+                    let sample = &samples[i];
+                    let angle = (sample.angle / 100) as usize;
+                    self.points[angle] = sample.distance as u32;
+                }
             },
-            Err => println!("scan failed")
+            _ => println!("scan failed")
         }
     }
 

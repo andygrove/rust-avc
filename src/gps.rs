@@ -2,7 +2,6 @@ extern crate serial;
 use std::io::prelude::*;
 use self::serial::prelude::*;
 
-extern crate navigation;
 use navigation::*;
 
 use std::sync::{Arc, Mutex};
