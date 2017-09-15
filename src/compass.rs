@@ -23,19 +23,18 @@ impl Compass {
 
     pub fn get(&mut self) -> Option<f32> {
 
+        let gauss_lsb_xy = 1100.0;
+        let gauss_lsb_z  =  980.0;
 
-    let gauss_lsb_xy = 1100.0;
-    let gauss_lsb_z  =  980.0;
+        // You need to determine the correct magnetic declination for your location for accurate
+        // readings. Find yours at http://www.magnetic-declination.com/
+        let declination_angle = 0.22; // in radians, not degrees
 
-    // You need to determine the correct magnetic declination for your location for accurate
-    // readings. Find yours at http://www.magnetic-declination.com/
-    let declination_angle = 0.22; // in radians, not degrees
-
- // read raw values
+         // read raw values
         let (x, y, z) = self.mag.read().unwrap();
 
         // convert to micro-teslas
-        let (x, y, z) = (x/gauss_lsb_xy*100.0, y/gauss_lsb_xy*100.0, z/gauss_lsb_z*100.0);
+        let (x, y, _) = (x/gauss_lsb_xy*100.0, y/gauss_lsb_xy*100.0, z/gauss_lsb_z*100.0);
 
         let mut heading = y.atan2(x) + declination_angle;
 
@@ -50,8 +49,6 @@ impl Compass {
         // Convert radians to degrees for readability.
         heading = heading * 180.0 / PI;
 
-Some(heading)
-
-
+        Some(heading)
     }
 }
