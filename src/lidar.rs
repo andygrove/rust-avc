@@ -1,4 +1,5 @@
 use std::sync::{Arc, Mutex};
+use std::thread;
 
 extern crate libsweep;
 use self::libsweep::*;
@@ -12,9 +13,18 @@ impl Lidar {
 
     pub fn new(port: String) -> Self {
         let sweep = Sweep::new(port).unwrap();
-        sweep.start_scanning();
+        sweep.start_scanning().unwrap();
         Lidar { sweep: Arc::new(Mutex::new(sweep)), points: [0; 360] }
     }
+
+//    fn start_thread(&self) {
+//        let lidar = self.sweep.clone();
+//        let _ = thread::spawn(move || {
+//            loop {
+//                lidar.lock().unwrap().scan();
+//            }
+//        });
+//    }
 
     pub fn min(&self, start: usize, end: usize) -> u32 {
         let mut min = self.points[start];
