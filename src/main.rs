@@ -22,6 +22,7 @@ mod video;
 mod avc;
 mod motors;
 mod switch;
+mod lidar;
 
 use gps::GPS;
 use compass::Compass;
@@ -30,6 +31,7 @@ use avc::*;
 use switch::*;
 use motors::*;
 use qik::*;
+use lidar::*;
 
 mod octasonic;
 use octasonic::*;
