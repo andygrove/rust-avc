@@ -281,7 +281,7 @@ impl AVC {
                             state.distance_front_left  = io.lidar.min(225, 315);
                             state.distance_front       = io.lidar.min(315, 45);
                             state.distance_front_right = io.lidar.min(45, 135);
-                            io.lidar.get(&state.lidar);
+                            io.lidar.get(&mut state.lidar);
 
                             match self.check_obstacles(&state) {
                                 Some(avoid) => {
