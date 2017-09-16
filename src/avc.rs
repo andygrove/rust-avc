@@ -556,8 +556,8 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
 
     let green = Color::new(0, 255, 0, 24); // r, g, b, alpha
 
-    let cx = 320;
-    let cy = 240;
+    let cx = 320_i32;
+    let cy = 240_i32;
 
     video.fill_rect(cx-3, cy-3, 7, 7, &green);
 
