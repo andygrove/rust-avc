@@ -562,10 +562,13 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
     video.fill_rect(cx-3, cy-3, 7, 7, &green);
 
     for i in 0..360 {
-        if s.lidar[i] < 400 {
+        // don't show behing the sensor since it is the LCD panel and only show points that are closer than 400cm
+        if (i<135 || i>225) && s.lidar[i] < 400 {
+
+            // now scale distance down to fit into the area on the screen
             let distance = (s.lidar[i]/2) as f64;
 
-            let angle_radians = (angle as f64).to_radians();
+            let angle_radians = (i as f64).to_radians();
             let ox = (distance * angle_radians.sin()) as u32;
             let oy = (distance * angle_radians.cos()) as u32;
 
