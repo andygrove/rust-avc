@@ -558,7 +558,8 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
     let cy = 240;
 
     for i in 0..360 {
-        if s.lidar[i] < 1000 {
+        if s.lidar[i] < 400 {
+            let distance = (s.lidar[i]/2) as f64;
             let (x,y) = to_point(i, 200_f64, cx, cy);
             if i < 90 {
                 video.fill_rect(x-1, y-1, 3, 3, &lc1);
@@ -573,14 +574,16 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
 fn to_point(angle: usize, distance: f64, x: u32, y: u32) -> (u32,u32) {
     if angle < 90 {
         let (ox, oy) = calc(angle, distance);
-        (x+ox, y+oy)
+        (x+ox, y-oy)
     } else if angle < 180 {
         let (ox, oy) = calc(angle-90, distance);
-        (x+ox, y-oy)
+        (x+ox, y+oy)
     } else if angle < 270 {
-        (0,0)
+        let (ox, oy) = calc(angle-180, distance);
+        (x-ox, y+oy)
     } else {
-        (0,0)
+        let (ox, oy) = calc(angle-270, distance);
+        (x-ox, y-oy)
     }
 }
 
