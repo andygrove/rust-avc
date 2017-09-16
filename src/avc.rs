@@ -554,14 +554,25 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
     let lc1 = Color::new(40, 40, 200, 24); // r, g, b, alpha
     let lc2 = Color::new(200, 40, 40, 24); // r, g, b, alpha
 
+    let green = Color::new(0, 255, 0, 24); // r, g, b, alpha
+
     let cx = 320;
     let cy = 240;
+
+    video.fill_rect(cx-3, cy-3, 7, 7, &green);
 
     for i in 0..360 {
         if s.lidar[i] < 400 {
             let distance = (s.lidar[i]/2) as f64;
-            let (x,y) = to_point(i, 200_f64, cx, cy);
-            if i < 90 {
+
+            let angle_radians = (angle as f64).to_radians();
+            let ox = (distance * angle_radians.sin()) as u32;
+            let oy = (distance * angle_radians.cos()) as u32;
+
+            let x = cx + ox;
+            let y = cy + oy;
+
+            if i < 45 {
                 video.fill_rect(x-1, y-1, 3, 3, &lc1);
             } else {
                 video.fill_rect(x-1, y-1, 3, 3, &lc2);
@@ -571,25 +582,3 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
 
 }
 
-fn to_point(angle: usize, distance: f64, x: u32, y: u32) -> (u32,u32) {
-    if angle < 90 {
-        let (ox, oy) = calc(angle, distance);
-        (x+ox, y-oy)
-    } else if angle < 180 {
-        let (ox, oy) = calc(angle-90, distance);
-        (x+ox, y+oy)
-    } else if angle < 270 {
-        let (ox, oy) = calc(angle-180, distance);
-        (x-ox, y+oy)
-    } else {
-        let (ox, oy) = calc(angle-270, distance);
-        (x-ox, y-oy)
-    }
-}
-
-fn calc(angle: usize, distance: f64) -> (u32,u32) {
-    let angle_radians = (angle as f64).to_radians();
-    let ox = (distance * angle_radians.cos()) as u32;
-    let oy = (distance * angle_radians.sin()) as u32;
-    (ox, oy)
-}
