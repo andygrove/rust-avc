@@ -572,8 +572,8 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
             let ox = (distance * angle_radians.sin()) as i32;
             let oy = (distance * angle_radians.cos()) as i32;
 
-            let x = cx + ox;
-            let y = cy + oy;
+            let x = (cx + ox) as u32;
+            let y = (cy + oy) as u32;
 
             if i < 45 {
                 video.fill_rect(x-1, y-1, 3, 3, &lc1);
