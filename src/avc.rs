@@ -559,43 +559,34 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
 
     for i in 0..360 {
         if s.lidar[i] < 1000 {
-            let angle_radians = (i as f64).to_radians();
-            let distance = 200_f64; //(s.lidar[i] / 4) as f64;
-            //let distance = (s.lidar[i] / 4) as f64;
-            let x = cx + (distance * angle_radians.cos()) as u32;
-            let y = cy + (distance * angle_radians.sin()) as u32;
-            //video.fill_rect(x-2, y-2, 5, 5, &lc1);
+            let (x,y) = to_point(i, 200_f64, cx, cy);
             if i < 90 {
-            video.fill_rect(x-1, y-1, 3, 3, &lc1);
-} else {
-            video.fill_rect(x-1, y-1, 3, 3, &lc2);
-}
+                video.fill_rect(x-1, y-1, 3, 3, &lc1);
+            } else {
+                video.fill_rect(x-1, y-1, 3, 3, &lc2);
+            }
         }
     }
-
-    // linear display of points
-/*
-    let screen_height = 480;
-
-    // right hand side of screen
-    for i in 0..180 {
-        if s.lidar[i] < 1000 {
-            let x = i as u32 + 320;
-            let y = screen_height - s.lidar[i] / 4 as u32;
-            video.fill_rect(x-2, y-2, 5, 5, &lc1);
-            video.fill_rect(x-1, y-1, 3, 3, &lc2);
-        }
-    }
-    // left hand side of screen
-    for i in 180..360 {
-        if s.lidar[i] < 1000 {
-            let x = i as u32 - 180 + 140;
-            let y = screen_height - s.lidar[i] / 4 as u32;
-            video.fill_rect(x-2, y-2, 3, 3, &lc1);
-            video.fill_rect(x-1, y-1, 3, 3, &lc2);
-        }
-    }
-*/
 
 }
 
+fn to_point(angle: usize, distance: f64, x: u32, y: u32) -> (u32,u32) {
+    if angle < 90 {
+        let (ox, oy) = calc(angle, distance);
+        (x+ox, y+oy)
+    } else if angle < 180 {
+        let (ox, oy) = calc(angle-90, distance);
+        (x+ox, y-oy)
+    } else if angle < 270 {
+        (0,0)
+    } else {
+        (0,0)
+    }
+}
+
+fn calc(angle: usize, distance: f64) -> (u32,u32) {
+    let angle_radians = (angle as f64).to_radians();
+    let ox = (distance * angle_radians.cos()) as u32;
+    let oy = (distance * angle_radians.sin()) as u32;
+    (ox, oy)
+}
