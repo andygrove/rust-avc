@@ -551,8 +551,8 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
     video.draw_text(x2, y, format!("{:?}", s.action), &c);
 
     // draw raw LIDAR data points
-    let lc1 = Color::new(40, 40, 200, 24); // r, g, b, alpha
-    let lc2 = Color::new(200, 40, 40, 24); // r, g, b, alpha
+    let blue = Color::new(40, 40, 200, 24); // r, g, b, alpha
+    let red = Color::new(200, 40, 40, 24); // r, g, b, alpha
 
     let green = Color::new(0, 255, 0, 24); // r, g, b, alpha
 
@@ -577,10 +577,11 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
             let x = (cx + ox) as u32;
             let y = (cy - oy) as u32;
 
-            if i < 45 {
-                video.fill_rect(x-1, y-1, 3, 3, &lc1);
+            // use color coding for distance
+            if s.lidar[i] < 100 {
+                video.fill_rect(x-1, y-1, 3, 3, &red);
             } else {
-                video.fill_rect(x-1, y-1, 3, 3, &lc2);
+                video.fill_rect(x-1, y-1, 3, 3, &blue);
             }
         }
     }
