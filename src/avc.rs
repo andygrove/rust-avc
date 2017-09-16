@@ -560,11 +560,16 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
     for i in 0..360 {
         if s.lidar[i] < 1000 {
             let angle_radians = (i as f64).to_radians();
-            let distance = s.lidar[i] / 4;
-            let x = cx + distance * angle_radians.cos();
-            let y = cy + distance * angle_radians.sin();
-            video.fill_rect(x-2, y-2, 5, 5, &lc1);
+            let distance = 200_f64; //(s.lidar[i] / 4) as f64;
+            //let distance = (s.lidar[i] / 4) as f64;
+            let x = cx + (distance * angle_radians.cos()) as u32;
+            let y = cy + (distance * angle_radians.sin()) as u32;
+            //video.fill_rect(x-2, y-2, 5, 5, &lc1);
+            if i < 90 {
+            video.fill_rect(x-1, y-1, 3, 3, &lc1);
+} else {
             video.fill_rect(x-1, y-1, 3, 3, &lc2);
+}
         }
     }
 
@@ -594,29 +599,3 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
 
 }
 
-fn draw_lidar_circle(video: &Video, s: &State, cx: u32, cy: u32) {
-
-    let lc1 = Color::new(40, 40, 200, 24); // r, g, b, alpha
-    let lc2 = Color::new(200, 40, 40, 24); // r, g, b, alpha
-
-    for i in 0..360 {
-        if s.lidar[i] < 1000 {
-            let distance = s.lidar[i] / 4;
-            let x = cx + distance * i.cos();
-            let y = cy + distance * i.sin();
-        }
-    }
-
-    /*
-    #define radian2degree(a) (a * 57.295779513082)
-    #define degree2radian(a) (a * 0.017453292519)
-    x = start_x + len * cos(angle);
-    y = start_y + len * sin(angle);
-    */
-
-
-
-
-
-
-}
