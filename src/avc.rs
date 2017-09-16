@@ -569,8 +569,8 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
             let distance = (s.lidar[i]/2) as f64;
 
             let angle_radians = (i as f64).to_radians();
-            let ox = (distance * angle_radians.sin()) as u32;
-            let oy = (distance * angle_radians.cos()) as u32;
+            let ox = (distance * angle_radians.sin()) as i32;
+            let oy = (distance * angle_radians.cos()) as i32;
 
             let x = cx + ox;
             let y = cy + oy;
