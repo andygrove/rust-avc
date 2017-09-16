@@ -559,7 +559,7 @@ fn augment_video(video: &Video, s: &State, now: DateTime<UTC>, elapsed: i64, fra
     let cx = 320_i32;
     let cy = 240_i32;
 
-    video.fill_rect(cx-3, cy-3, 7, 7, &green);
+    video.fill_rect((cx-3) as u32, (cy-3) as u32, 7, 7, &green);
 
     for i in 0..360 {
         // don't show behing the sensor since it is the LCD panel and only show points that are closer than 400cm
